@@ -14,5 +14,5 @@ instance Show JSON where
 
 formatObject :: Show a => [(String, a)] -> String
 formatObject [] = ""
-formatObject [(k, v)] = k ++ ":" ++ show v
-formatObject ((k, v):xs) = k ++ ":" ++ show v ++ "," ++ formatObject xs
+formatObject [(k, v)] = show k ++ ":" ++ show v
+formatObject ((k, v):xs) = show k ++ ":" ++ show v ++ "," ++ formatObject xs
