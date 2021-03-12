@@ -24,15 +24,15 @@ parseDouble = createDouble
 createDouble :: Int -> Double -> Int -> Double
 createDouble real float expo = (fromIntegral real + float) * (10 ^^ expo)
    
-stringLiteral :: Parser String
-stringLiteral = char '\"' *> token str <* char '\"'
+charSeq :: Parser String
+charSeq = char '\"' *> token str <* char '\"'
   where
     str = do x  <- sat (/= '\"')
              xs <- many (sat (/= '\"'))
              return (x:xs)
 
 parseString :: Parser JSON
-parseString = JString <$> stringLiteral
+parseString = JString <$> charSeq
 
 sepBy :: Parser a -> Parser b -> Parser [b]
 sepBy sep element = (:) <$> element <*> many (sep *> element) <|> pure []
@@ -45,7 +45,7 @@ parseArray = JArray <$> (char '[' *> space *> elems <* space <* char ']')
 parseObject :: Parser JSON
 parseObject = JObject <$> (char '{' *> space *> sepBy (space *> char ',' <* space) keyValue <* space <* char '}')
   where
-    keyValue = (\key _ val -> (key, val)) <$> stringLiteral <*> (space *> char ':' <* space) <*> parseJSON
+    keyValue = (\key _ val -> (key, val)) <$> charSeq <*> (space *> char ':' <* space) <*> parseJSON
 
 parseJSON :: Parser JSON
 parseJSON = token (parseNull <|> parseBool <|> parseNum <|> parseString <|> parseArray <|> parseObject)
