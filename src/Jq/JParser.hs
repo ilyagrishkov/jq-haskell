@@ -23,12 +23,22 @@ parseDouble = createDouble
 
 createDouble :: Int -> Double -> Int -> Double
 createDouble real float expo = (fromIntegral real + float) * (10 ^^ expo)
+
+escapeChar :: Parser Char
+escapeChar = ('"' <$ string "\\\"") <|>
+             ('\\' <$ string "\\\\") <|>
+             ('/' <$ string "\\/") <|>
+             ('\b' <$ string "\\b") <|>
+             ('\f' <$ string "\\f") <|>
+             ('\n' <$ string "\\n") <|>
+             ('\r' <$ string "\\r") <|>
+             ('\t' <$ string "\\t")
    
 charSeq :: Parser String
 charSeq = char '\"' *> token str <* char '\"'
   where
-    str = do x  <- sat (/= '\"')
-             xs <- many (sat (/= '\"'))
+    str = do x  <- sat ((&&) <$> (/= '"') <*> (/= '\\')) <|> escapeChar
+             xs <- many (sat ((&&) <$> (/= '"') <*> (/= '\\')) <|> escapeChar)
              return (x:xs)
 
 parseString :: Parser JSON
