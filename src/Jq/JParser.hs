@@ -19,7 +19,7 @@ parseDouble :: Parser Double
 parseDouble = createDouble 
     <$> integer
     <*> ((read <$> (('0':) <$> ((:) <$> char '.' <*> (show <$> integer)))) <|> pure 0)
-    <*> ((char 'e' <|> char 'E') *> integer <|> pure 0)
+    <*> ((char 'e' <|> char 'E') *> (integer <|> char '+' *> integer <|> pure 0))
 
 createDouble :: Int -> Double -> Int -> Double
 createDouble real float expo = (fromIntegral real + float) * (10 ^^ expo)
