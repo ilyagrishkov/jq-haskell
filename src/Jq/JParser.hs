@@ -1,7 +1,8 @@
 module Jq.JParser where
 
-import Parsing.Parsing
+import Data.Char (isHexDigit, readLitChar)
 import Jq.Json
+import Parsing.Parsing
 
 parseNull :: Parser JSON
 parseNull = JNull <$ string "null"
@@ -9,37 +10,47 @@ parseNull = JNull <$ string "null"
 parseBool :: Parser JSON
 parseBool = jsonTrue <|> jsonFalse
   where
-     jsonTrue = JBool True <$ string "true"
-     jsonFalse = JBool False <$ string "false"
+    jsonTrue = JBool True <$ string "true"
+    jsonFalse = JBool False <$ string "false"
 
 parseNum :: Parser JSON
 parseNum = JNum <$> parseDouble
-    
+
 parseDouble :: Parser Double
-parseDouble = createDouble 
+parseDouble =
+  createDouble
     <$> integer
-    <*> ((read <$> (('0':) <$> ((:) <$> char '.' <*> (show <$> integer)))) <|> pure 0)
+    <*> ((read <$> (('0' :) <$> ((:) <$> char '.' <*> (show <$> integer)))) <|> pure 0)
     <*> ((char 'e' <|> char 'E') *> (integer <|> char '+' *> integer) <|> pure 0)
 
 createDouble :: Int -> Double -> Int -> Double
 createDouble real float expo = (fromIntegral real + float) * (10 ^^ expo)
 
-escapeChar :: Parser Char
-escapeChar = ('"' <$ string "\\\"") <|>
-             ('\\' <$ string "\\\\") <|>
-             ('/' <$ string "\\/") <|>
-             ('\b' <$ string "\\b") <|>
-             ('\f' <$ string "\\f") <|>
-             ('\n' <$ string "\\n") <|>
-             ('\r' <$ string "\\r") <|>
-             ('\t' <$ string "\\t")
-   
+escapeUnicode :: Parser Char
+escapeUnicode = fst . head . readLitChar <$> readNChars isHexDigit 4
+
+escape :: Parser Char
+escape =
+  ('"' <$ string "\\\"")
+    <|> ('\\' <$ string "\\\\")
+    <|> ('/' <$ string "\\/")
+    <|> ('\n' <$ string "\\n")
+    <|> ('\t' <$ string "\\t")
+    <|> ('\b' <$ string "\\b")
+    <|> ('\f' <$ string "\\f")
+    <|> ('\r' <$ string "\\r")
+    <|> (string "\\u" *> escapeUnicode)
+
+readNChars :: (Char -> Bool) -> Int -> Parser String
+readNChars f n = sequenceA (replicate n (sat f))
+
 charSeq :: Parser String
-charSeq = char '\"' *> token str <* char '\"'
+charSeq = char '"' *> token str <* char '"'
   where
-    str = do x  <- sat ((&&) <$> (/= '"') <*> (/= '\\')) <|> escapeChar
-             xs <- many (sat ((&&) <$> (/= '"') <*> (/= '\\')) <|> escapeChar)
-             return (x:xs)
+    str = do
+      x <- sat ((&&) <$> (/= '"') <*> (/= '\\')) <|> escape
+      xs <- many (sat ((&&) <$> (/= '"') <*> (/= '\\')) <|> escape)
+      return (x : xs)
 
 parseString :: Parser JSON
 parseString = JString <$> charSeq
