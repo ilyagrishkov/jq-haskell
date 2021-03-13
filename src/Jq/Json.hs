@@ -12,8 +12,8 @@ instance Show JSON where
 
 formatObject ::  Int -> [(String, JSON)] -> String
 formatObject _ [] = ""
-formatObject n [(k, v)] = replicate n ' ' ++ show k ++ ":" ++ prettyPrint n v
-formatObject n ((k, v):xs) = replicate n ' ' ++ show k ++ ":" ++ prettyPrint n v ++ ",\n" ++ formatObject n xs
+formatObject n [(k, v)] = replicate n ' ' ++ show k ++ ": " ++ prettyPrint n v
+formatObject n ((k, v):xs) = replicate n ' ' ++ show k ++ ": " ++ prettyPrint n v ++ ",\n" ++ formatObject n xs
 
 formatArray ::  Int -> [JSON] -> String
 formatArray _ [] = ""
