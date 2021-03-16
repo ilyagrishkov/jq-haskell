@@ -121,3 +121,33 @@ integer = token int
 
 symbol :: String -> Parser String
 symbol xs = token (string xs)
+
+---------------------------
+sepBy :: Parser a -> Parser b -> Parser [b]
+sepBy sep element = (:) <$> element <*> many (sep *> element) <|> pure []
+
+readNChars :: (Char -> Bool) -> Int -> Parser String
+readNChars f n = sequenceA (replicate n (sat f))
+
+charSeq :: Parser String
+charSeq = char '"' *> token str <* char '"'
+  where
+    str = do
+      x <- sat ((&&) <$> (/= '"') <*> (/= '\\')) <|> escape
+      xs <- many (sat ((&&) <$> (/= '"') <*> (/= '\\')) <|> escape)
+      return (x : xs)
+      
+escapeUnicode :: Parser Char
+escapeUnicode = fst . head . readLitChar <$> readNChars isHexDigit 4
+
+escape :: Parser Char
+escape =
+  ('"' <$ string "\\\"")
+    <|> ('\\' <$ string "\\\\")
+    <|> ('/' <$ string "\\/")
+    <|> ('\n' <$ string "\\n")
+    <|> ('\t' <$ string "\\t")
+    <|> ('\b' <$ string "\\b")
+    <|> ('\f' <$ string "\\f")
+    <|> ('\r' <$ string "\\r")
+    <|> (string "\\u" *> escapeUnicode)
