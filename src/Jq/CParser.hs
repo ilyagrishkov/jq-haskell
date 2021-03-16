@@ -4,12 +4,13 @@ import Parsing.Parsing
 import Jq.Filters
 
 parseIdentity :: Parser Filter
-parseIdentity = do
-  _ <- token . char $ '.'
-  return Identity
+parseIdentity = Identity <$ char '.'
+  
+parseValueIterator :: Parser Filter
+parseValueIterator = ValueIterator <$ string ".[]"
 
 parseFilter :: Parser Filter
-parseFilter = parseIdentity
+parseFilter = token (parseValueIterator <|> parseIdentity)
 
 parseConfig :: [String] -> Either String Config
 parseConfig s = case s of
