@@ -16,14 +16,11 @@ parseNum :: Parser JSON
 parseNum = JNum <$> parseDouble
 
 parseDouble :: Parser Double
-parseDouble =
-  createDouble
-    <$> (integer <|> pure 0)
-    <*> ((read <$> (('0' :) <$> ((:) <$> char '.' <*> (show <$> integer)))) <|> pure 0)
-    <*> ((char 'e' <|> char 'E') *> (integer <|> char '+' *> integer) <|> pure 0)
-
-createDouble :: Int -> Double -> Int -> Double
-createDouble real float expo = (fromIntegral real + float) * (10 ^^ expo)
+parseDouble = (\num e -> num * (10 ^^ e)) . read <$> ((++) <$> real <*> (('.' :) . show <$> float)) <*> expo
+    where
+      real = show <$> (integer <|> pure 0) 
+      float = string "." *> (integer <|> pure 0) <|> pure 0
+      expo = (char 'e' <|> char 'E') *> (integer <|> char '+' *> integer) <|> pure 0
 
 parseString :: Parser JSON
 parseString = JString <$> charSeq
