@@ -18,7 +18,7 @@ parseNum = JNum <$> parseDouble
 parseDouble :: Parser Double
 parseDouble =
   createDouble
-    <$> integer
+    <$> (integer <|> pure 0)
     <*> ((read <$> (('0' :) <$> ((:) <$> char '.' <*> (show <$> integer)))) <|> pure 0)
     <*> ((char 'e' <|> char 'E') *> (integer <|> char '+' *> integer) <|> pure 0)
 
