@@ -18,8 +18,8 @@ parseNum = JNum <$> parseDouble
 parseDouble :: Parser Double
 parseDouble = (\num e -> num * (10 ^^ e)) . read <$> ((++) <$> real <*> (('.' :) . show <$> float)) <*> expo
     where
-      real = show <$> (integer <|> pure 0) 
-      float = string "." *> (integer <|> pure 0) <|> pure 0
+      real = show <$> integer
+      float = char '.' *> (integer <|> pure 0) <|> pure 0
       expo = (char 'e' <|> char 'E') *> (integer <|> char '+' *> integer) <|> pure 0
 
 parseString :: Parser JSON
