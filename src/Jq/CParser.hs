@@ -21,13 +21,18 @@ parseGenericObjectIndex = GenericObjectIndex <$> (string ".[" *> charSeq <* stri
 parseArrayIndex :: Parser Filter
 parseArrayIndex = ArrayIndex <$> (string ".[" *> integer <* char ']')
 
+parseSlice :: Parser Filter
+parseSlice = Slice <$> (string ".[" *> slice <* char ']')
+  where 
+    slice = (\a _ c -> (a, c)) <$> integer <*> string ".." <*> integer
+  
 parseComma :: Parser Filter
 parseComma = Comma <$> filtersPair
    where
      filtersPair = (\key _ val -> (key, val)) <$> parseFilter <*> (space *> char ',' <* space) <*> parseFilter
 
 parseFilter :: Parser Filter
-parseFilter = token (parseArrayIndex <|> parseGenericObjectIndex <|> parseOptionalObjectIdentifierIndex <|> parseObjectIdentifierIndex <|> parseValueIterator <|> parseIdentity <|> parseComma)
+parseFilter = token (parseSlice <|> parseArrayIndex <|> parseGenericObjectIndex <|> parseOptionalObjectIdentifierIndex <|> parseObjectIdentifierIndex <|> parseValueIterator <|> parseIdentity <|> parseComma)
 
 parseConfig :: [String] -> Either String Config
 parseConfig s = case s of

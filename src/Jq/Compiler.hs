@@ -13,7 +13,7 @@ compile (ObjectIdentifierIndex i) = compileObjectIdentifierIndex i
 compile (OptionalObjectIdentifierIndex i) = compileOptionalObjectIdentifierIndex i
 compile (GenericObjectIndex i) = compileObjectIdentifierIndex i
 compile (ArrayIndex i) = compileArrayIndex i
-compile (Slice s) = undefined
+compile (Slice s) = uncurry compileSlice s
 compile (Comma f) = uncurry compileComma f 
 compile (Pipe f) = undefined
 
@@ -42,6 +42,10 @@ compileOptionalObjectIdentifierIndex _ _ = Right [JNull]
 compileArrayIndex :: Int -> JProgram[JSON]
 compileArrayIndex i (JArray a) = Right [a !! i]
 compileArrayIndex _ _ = Left "cannot select element from non-array"
+
+compileSlice :: Int -> Int -> JProgram[JSON]
+compileSlice s t (JArray a) = Right (take t (drop s a))
+compileSlice _ _ _ = Left "cannot slice over non array element"
 
 compileComma :: Filter -> Filter -> JProgram [JSON]
 compileComma f1 f2 inp = (++) <$> compile f1 inp <*> compile f2 inp
