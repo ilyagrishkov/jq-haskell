@@ -9,13 +9,16 @@ parseIdentity = Identity <$ char '.'
 parseValueIterator :: Parser Filter
 parseValueIterator = ValueIterator <$ string ".[]"
 
+parseObjectIdentifierIndex :: Parser Filter
+parseObjectIdentifierIndex = ObjectIdentifierIndex <$> (char '.' *> identifier)
+
 parseComma :: Parser Filter
 parseComma = Comma <$> filtersPair
    where
      filtersPair = (\key _ val -> (key, val)) <$> parseFilter <*> (space *> char ',' <* space) <*> parseFilter
 
 parseFilter :: Parser Filter
-parseFilter = token (parseValueIterator <|> parseIdentity <|> parseComma)
+parseFilter = token (parseObjectIdentifierIndex <|> parseValueIterator <|> parseIdentity <|> parseComma)
 
 parseConfig :: [String] -> Either String Config
 parseConfig s = case s of
