@@ -30,6 +30,11 @@ parseComma :: Parser Filter
 parseComma = Comma <$> filtersPair
    where
      filtersPair = (\key _ val -> (key, val)) <$> parseFilter <*> (space *> char ',' <* space) <*> parseFilter
+     
+parsePipe :: Parser Filter
+parsePipe = Pipe <$> filtersPair
+   where
+     filtersPair = (\key _ val -> (key, val)) <$> parseFilter <*> (space *> char '|' <* space) <*> parseFilter
 
 parseFilter :: Parser Filter
 parseFilter = token (parseSlice <|> parseArrayIndex <|> parseGenericObjectIndex <|> parseOptionalObjectIdentifierIndex <|> parseObjectIdentifierIndex <|> parseValueIterator <|> parseIdentity <|> parseComma)
