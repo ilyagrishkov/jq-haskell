@@ -11,7 +11,11 @@ compile Identity = \inp -> Right [inp]
 compile ValueIterator = compileValueIterator
 compile (ObjectIdentifierIndex i) = compileObjectIdentifierIndex i
 compile (OptionalObjectIdentifierIndex i) = compileOptionalObjectIdentifierIndex i
+compile (GenericObjectIndex i) = undefined
+compile (ArrayIndex i) = undefined
+compile (Slice s) = undefined
 compile (Comma f) = uncurry compileComma f 
+compile (Pipe f) = undefined
 
 compileValueIterator :: JProgram [JSON]
 compileValueIterator (JObject b) = return (map snd b)

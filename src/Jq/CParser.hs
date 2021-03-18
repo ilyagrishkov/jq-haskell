@@ -14,7 +14,7 @@ parseObjectIdentifierIndex = ObjectIdentifierIndex <$> (char '.' *> identifier)
 
 parseOptionalObjectIdentifierIndex :: Parser Filter
 parseOptionalObjectIdentifierIndex = OptionalObjectIdentifierIndex <$> (char '.' *> identifier <* char '?')
-  
+
 parseComma :: Parser Filter
 parseComma = Comma <$> filtersPair
    where
