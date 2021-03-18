@@ -12,13 +12,16 @@ parseValueIterator = ValueIterator <$ string ".[]"
 parseObjectIdentifierIndex :: Parser Filter
 parseObjectIdentifierIndex = ObjectIdentifierIndex <$> (char '.' *> identifier)
 
+parseOptionalObjectIdentifierIndex :: Parser Filter
+parseOptionalObjectIdentifierIndex = OptionalObjectIdentifierIndex <$> (char '.' *> identifier <* char '?')
+  
 parseComma :: Parser Filter
 parseComma = Comma <$> filtersPair
    where
      filtersPair = (\key _ val -> (key, val)) <$> parseFilter <*> (space *> char ',' <* space) <*> parseFilter
 
 parseFilter :: Parser Filter
-parseFilter = token (parseObjectIdentifierIndex <|> parseValueIterator <|> parseIdentity <|> parseComma)
+parseFilter = token (parseOptionalObjectIdentifierIndex <|> parseObjectIdentifierIndex <|> parseValueIterator <|> parseIdentity <|> parseComma)
 
 parseConfig :: [String] -> Either String Config
 parseConfig s = case s of
