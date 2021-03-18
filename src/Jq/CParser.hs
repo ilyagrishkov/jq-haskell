@@ -15,13 +15,16 @@ parseObjectIdentifierIndex = ObjectIdentifierIndex <$> (char '.' *> identifier)
 parseOptionalObjectIdentifierIndex :: Parser Filter
 parseOptionalObjectIdentifierIndex = OptionalObjectIdentifierIndex <$> (char '.' *> identifier <* char '?')
 
+parseGenericObjectIndex :: Parser Filter
+parseGenericObjectIndex = GenericObjectIndex <$> (string ".[" *> charSeq <* string "]")
+
 parseComma :: Parser Filter
 parseComma = Comma <$> filtersPair
    where
      filtersPair = (\key _ val -> (key, val)) <$> parseFilter <*> (space *> char ',' <* space) <*> parseFilter
 
 parseFilter :: Parser Filter
-parseFilter = token (parseOptionalObjectIdentifierIndex <|> parseObjectIdentifierIndex <|> parseValueIterator <|> parseIdentity <|> parseComma)
+parseFilter = token (parseGenericObjectIndex <|> parseOptionalObjectIdentifierIndex <|> parseObjectIdentifierIndex <|> parseValueIterator <|> parseIdentity <|> parseComma)
 
 parseConfig :: [String] -> Either String Config
 parseConfig s = case s of
