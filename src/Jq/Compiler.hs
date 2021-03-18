@@ -12,7 +12,7 @@ compile ValueIterator = compileValueIterator
 compile (ObjectIdentifierIndex i) = compileObjectIdentifierIndex i
 compile (OptionalObjectIdentifierIndex i) = compileOptionalObjectIdentifierIndex i
 compile (GenericObjectIndex i) = compileObjectIdentifierIndex i
-compile (ArrayIndex i) = undefined
+compile (ArrayIndex i) = compileArrayIndex i
 compile (Slice s) = undefined
 compile (Comma f) = uncurry compileComma f 
 compile (Pipe f) = undefined
@@ -38,6 +38,10 @@ compileOptionalObjectIdentifierIndex i (JObject o) =
     [] -> Right [JNull]
     arr -> Right arr
 compileOptionalObjectIdentifierIndex _ _ = Right [JNull]
+
+compileArrayIndex :: Int -> JProgram[JSON]
+compileArrayIndex i (JArray a) = Right [a !! i]
+compileArrayIndex _ _ = Left "cannot select element from non-array"
 
 compileComma :: Filter -> Filter -> JProgram [JSON]
 compileComma f1 f2 inp = (++) <$> compile f1 inp <*> compile f2 inp
