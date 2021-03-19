@@ -36,6 +36,9 @@ parsePipe = Pipe <$> filtersPair
    where
      filtersPair = (\key _ val -> (key, val)) <$> parseSingleFilter <*> (space *> char '|' <* space) <*> parseFilter
      
+parseGroup :: Parser Filter
+parseGroup = char '(' *> parseFilter <* char ')'
+     
 parseNestedObjectIndex :: Parser Filter
 parseNestedObjectIndex = Pipe <$> filtersPair
   where
@@ -45,10 +48,10 @@ parseFilter :: Parser Filter
 parseFilter = parseComplexFilter <|> parseSingleFilter
 
 parseSingleFilter :: Parser Filter
-parseSingleFilter = token (parseSlice <|> parseArrayIndex <|> parseGenericObjectIndex <|> parseOptionalObjectIdentifierIndex <|> parseObjectIdentifierIndex <|> parseValueIterator <|> parseIdentity)
+parseSingleFilter = token (parseGroup <|> parseSlice <|> parseArrayIndex <|> parseGenericObjectIndex <|> parseOptionalObjectIdentifierIndex <|> parseObjectIdentifierIndex <|> parseValueIterator <|> parseIdentity)
 
 parseComplexFilter :: Parser Filter 
-parseComplexFilter = token (parseComma <|> parsePipe <|> parseNestedObjectIndex)
+parseComplexFilter = token (parsePipe <|> parseComma <|> parseNestedObjectIndex)
 
 parseConfig :: [String] -> Either String Config
 parseConfig s = case s of
