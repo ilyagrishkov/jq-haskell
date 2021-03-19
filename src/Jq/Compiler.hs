@@ -15,7 +15,7 @@ compile (GenericObjectIndex i) = compileObjectIdentifierIndex i
 compile (ArrayIndex i) = compileArrayIndex i
 compile (Slice s) = uncurry compileSlice s
 compile (Comma f) = uncurry compileComma f 
-compile (Pipe f) = undefined
+compile (Pipe f) = uncurry compilePipe f
 
 compileValueIterator :: JProgram [JSON]
 compileValueIterator (JObject b) = return (map snd b)
@@ -50,5 +50,8 @@ compileSlice _ _ _ = Left "cannot slice over non array element"
 compileComma :: Filter -> Filter -> JProgram [JSON]
 compileComma f1 f2 inp = (++) <$> compile f1 inp <*> compile f2 inp
 
+compilePipe :: Filter -> Filter -> JProgram [JSON]
+compilePipe f1 f2 inp = undefined
+ 
 run :: JProgram [JSON] -> JSON -> Either String [JSON]
 run p j = p j

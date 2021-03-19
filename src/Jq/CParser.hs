@@ -24,20 +24,31 @@ parseArrayIndex = ArrayIndex <$> (string ".[" *> integer <* char ']')
 parseSlice :: Parser Filter
 parseSlice = Slice <$> (string ".[" *> slice <* char ']')
   where 
-    slice = (\a _ c -> (a, c)) <$> integer <*> string ".." <*> integer
+    slice = (\a _ c -> (a, c)) <$> integer <*> string ":" <*> integer
   
 parseComma :: Parser Filter
 parseComma = Comma <$> filtersPair
    where
-     filtersPair = (\key _ val -> (key, val)) <$> parseFilter <*> (space *> char ',' <* space) <*> parseFilter
+     filtersPair = (\key _ val -> (key, val)) <$> parseSingleFilter <*> (space *> char ',' <* space) <*> parseFilter
      
 parsePipe :: Parser Filter
 parsePipe = Pipe <$> filtersPair
    where
-     filtersPair = (\key _ val -> (key, val)) <$> parseFilter <*> (space *> char '|' <* space) <*> parseFilter
+     filtersPair = (\key _ val -> (key, val)) <$> parseSingleFilter <*> (space *> char '|' <* space) <*> parseFilter
+     
+parseNestedObjectIndex :: Parser Filter
+parseNestedObjectIndex = Pipe <$> filtersPair
+  where
+     filtersPair = (\key val -> (ObjectIdentifierIndex key, val)) <$> (char '.' *> identifier) <*> parseNestedObjectIndex
 
 parseFilter :: Parser Filter
-parseFilter = token (parseSlice <|> parseArrayIndex <|> parseGenericObjectIndex <|> parseOptionalObjectIdentifierIndex <|> parseObjectIdentifierIndex <|> parseValueIterator <|> parseIdentity <|> parseComma)
+parseFilter = parseComplexFilter <|> parseSingleFilter
+
+parseSingleFilter :: Parser Filter
+parseSingleFilter = token (parseSlice <|> parseArrayIndex <|> parseGenericObjectIndex <|> parseOptionalObjectIdentifierIndex <|> parseObjectIdentifierIndex <|> parseValueIterator <|> parseIdentity)
+
+parseComplexFilter :: Parser Filter 
+parseComplexFilter = token (parseComma <|> parsePipe <|> parseNestedObjectIndex)
 
 parseConfig :: [String] -> Either String Config
 parseConfig s = case s of
