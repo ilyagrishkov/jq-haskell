@@ -29,7 +29,7 @@ compileObjectIdentifierIndex :: String -> JProgram [JSON]
 compileObjectIdentifierIndex i (JObject o) =
   case map snd (filter (\(a, _) -> a == i) o) of
     [] -> Left "couldn't select anything"
-    arr -> Right arr
+    arr -> Right [last arr]
 compileObjectIdentifierIndex _ _ = Left "couldn't select anything"
 
 compileOptionalObjectIdentifierIndex :: String -> JProgram [JSON]
@@ -51,12 +51,7 @@ compileComma :: Filter -> Filter -> JProgram [JSON]
 compileComma f1 f2 inp = (++) <$> compile f1 inp <*> compile f2 inp
 
 compilePipe :: Filter -> Filter -> JProgram [JSON]
-compilePipe f1 f2 inp = compile f1 inp >>= compileSecondPipe f2
-      
-compileSecondPipe :: Filter -> [JSON] -> Either String [JSON]
-compileSecondPipe _ [] = Right [JNull]
-compileSecondPipe f [x] = compile f x
-compileSecondPipe f (x:xs) = (++) <$> compile f x <*> compileSecondPipe f xs
+compilePipe f1 f2 inp = compile f1 inp >>= foldr (\x -> (<*>) ((++) <$> compile f2 x)) (Right [])
       
 run :: JProgram [JSON] -> JSON -> Either String [JSON]
 run p j = p j
