@@ -8,7 +8,7 @@ type JProgram a = JSON -> Either String a
 
 compile :: Filter -> JProgram [JSON]
 compile Identity = \inp -> Right [inp]
-compile ValueIterator = compileValueIterator
+compile (ValueIterator opt) = compileValueIterator opt
 compile (ObjectIdentifierIndex i) = compileObjectIdentifierIndex i
 compile (OptionalObjectIdentifierIndex i) = compileOptionalObjectIdentifierIndex i
 compile (ArrayIndex i) = compileArrayIndex i
@@ -16,13 +16,10 @@ compile (Slice s) = uncurry compileSlice s
 compile (Comma f) = uncurry compileComma f
 compile (Pipe f) = uncurry compilePipe f
 
-compileValueIterator :: JProgram [JSON]
-compileValueIterator (JObject b) = return (map snd b)
-compileValueIterator (JArray a) = return a
-compileValueIterator JNull = error "Cannot iterate over null (null)" 
-compileValueIterator (JNum n) = error ("Cannot iterate over number (" ++ show (JNum n) ++ ")")
-compileValueIterator (JString s) = error ("Cannot iterate over string (" ++ s ++ ")")
-compileValueIterator (JBool b) = error ("Cannot iterate over boolean (" ++ show b ++ ")")
+compileValueIterator :: Bool -> JProgram [JSON]
+compileValueIterator _ (JObject b) = Right (map snd b)
+compileValueIterator _ (JArray a) = Right a
+compileValueIterator opt _ = if opt then Right [] else Left "Cannot iterate"
 
 compileObjectIdentifierIndex :: String -> JProgram [JSON]
 compileObjectIdentifierIndex i (JObject o) = 

@@ -7,7 +7,7 @@ parseIdentity :: Parser Filter
 parseIdentity = Identity <$ char '.'
   
 parseValueIterator :: Parser Filter
-parseValueIterator = ValueIterator <$ string ".[]"
+parseValueIterator = ValueIterator . (\x  -> last x == '?') <$> (string ".[]?" <|> string ".[]")
 
 parseObjectIdentifierIndex :: Parser Filter
 parseObjectIdentifierIndex = convertToPipe <$> some (char '.' *> (parseOptionalObjectIdentifierIndex <|> parseStandardObjectIdentifierIndex))
