@@ -23,6 +23,9 @@ parseStandardObjectIdentifierIndex = identifier <|> charSeq <|> (string "[" *> c
 parseArrayIndex :: Parser Filter
 parseArrayIndex = ArrayIndex <$> (string ".[" *> split (space *> char ',' <* space) integer <* char ']')
 
+parseOptionalArrayIndex :: Parser Filter
+parseOptionalArrayIndex = OptionalArrayIndex <$> (string ".[" *> split (space *> char ',' <* space) integer <* string "]?")
+
 parseSlice :: Parser Filter
 parseSlice = Slice <$> (string ".[" *> slice <* char ']')
   where 
@@ -45,7 +48,7 @@ parseFilter :: Parser Filter
 parseFilter = parseComplexFilter <|> parseSingleFilter
 
 parseSingleFilter :: Parser Filter
-parseSingleFilter = token (parseGroup <|> parseSlice <|> parseArrayIndex <|> parseObjectIdentifierIndex <|> parseIdentity)
+parseSingleFilter = token (parseGroup <|> parseSlice <|> parseOptionalArrayIndex <|> parseArrayIndex <|> parseObjectIdentifierIndex <|> parseIdentity)
 
 parseComplexFilter :: Parser Filter
 parseComplexFilter = token (parsePipe <|> parseComma)

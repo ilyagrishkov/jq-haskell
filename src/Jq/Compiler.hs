@@ -8,9 +8,10 @@ type JProgram a = JSON -> Either String a
 
 compile :: Filter -> JProgram [JSON]
 compile Identity = \inp -> Right [inp]
-compile (ObjectIdentifierIndex i) = compileObjectIdentifierIndex i
-compile (OptionalObjectIdentifierIndex i) = compileOptionalObjectIdentifierIndex i
-compile (ArrayIndex i) = compileArrayIndex i
+compile (ObjectIdentifierIndex i) = compileObjectIdentifierIndex i False
+compile (OptionalObjectIdentifierIndex i) = compileObjectIdentifierIndex i True
+compile (ArrayIndex i) = compileArrayIndex i False
+compile (OptionalArrayIndex i) = compileArrayIndex i True
 compile (Slice s) = uncurry compileSlice s
 compile (Comma f) = uncurry compileComma f
 compile (Pipe f) = uncurry compilePipe f
@@ -20,25 +21,18 @@ compileValueIterator _ (JObject b) = Right (map snd b)
 compileValueIterator _ (JArray a) = Right a
 compileValueIterator opt _ = if opt then Right [] else Left "Cannot iterate"
 
-compileObjectIdentifierIndex :: String -> JProgram [JSON]
-compileObjectIdentifierIndex i (JObject o) = 
+compileObjectIdentifierIndex :: String -> Bool -> JProgram [JSON]
+compileObjectIdentifierIndex i _ (JObject o) = 
   case map snd (filter (\(a, _) -> a == i) o) of
     [] -> Left "couldn't select anything"
     arr -> Right [last arr]
-compileObjectIdentifierIndex _ _ = Left "couldn't select anything"
+compileObjectIdentifierIndex _ opt _ = if opt then Right [] else Left "couldn't select anything"
 
-compileOptionalObjectIdentifierIndex :: String -> JProgram [JSON]
-compileOptionalObjectIdentifierIndex i (JObject o) =
-  case map snd (filter (\(a, _) -> a == i) o) of
-    [] -> Right [JNull]
-    arr -> Right arr
-compileOptionalObjectIdentifierIndex _ _ = Right [JNull]
-
-compileArrayIndex :: [Int] -> JProgram[JSON]
-compileArrayIndex [] (JObject b) = Right (map snd b)
-compileArrayIndex [] (JArray a) = Right a
-compileArrayIndex i (JArray a) = Right (map (`findElem` a) i)
-compileArrayIndex _ _ = Left "cannot select element from non-array"
+compileArrayIndex :: [Int] -> Bool -> JProgram[JSON]
+compileArrayIndex [] _ (JObject b) = Right (map snd b)
+compileArrayIndex [] _ (JArray a) = Right a
+compileArrayIndex i _ (JArray a) = Right (map (`findElem` a) i)
+compileArrayIndex _ opt _ = if opt then Right [] else Left "cannot select element from non-array"
 
 compileSlice :: Int -> Int -> JProgram[JSON]
 compileSlice s t (JArray a) = Right (take t (drop s a))
