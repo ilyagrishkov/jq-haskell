@@ -137,6 +137,14 @@ charSeq = char '"' *> token str <* char '"'
       xs <- many (sat ((&&) <$> (/= '"') <*> (/= '\\')) <|> escape)
       return (x : xs)
       
+readUntil :: (Char -> Bool) -> Parser String
+readUntil f = token str
+  where 
+    str = do
+      x <- sat f <|> escape
+      xs <- many (sat f <|> escape)
+      return (x : xs)
+  
 escapeUnicode :: Parser Char
 escapeUnicode = fst . head . readLitChar <$> readNChars isHexDigit 4
 

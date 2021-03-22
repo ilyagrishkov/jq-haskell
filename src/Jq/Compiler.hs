@@ -11,7 +11,6 @@ compile Identity = \inp -> Right [inp]
 compile ValueIterator = compileValueIterator
 compile (ObjectIdentifierIndex i) = compileObjectIdentifierIndex i
 compile (OptionalObjectIdentifierIndex i) = compileOptionalObjectIdentifierIndex i
-compile (GenericObjectIndex i) = compileObjectIdentifierIndex i
 compile (ArrayIndex i) = compileArrayIndex i
 compile (Slice s) = uncurry compileSlice s
 compile (Comma f) = uncurry compileComma f

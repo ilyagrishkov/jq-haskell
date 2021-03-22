@@ -10,18 +10,18 @@ parseValueIterator :: Parser Filter
 parseValueIterator = ValueIterator <$ string ".[]"
 
 parseObjectIdentifierIndex :: Parser Filter
-parseObjectIdentifierIndex = convertToPipe <$> some (char '.' *> identifier)
+parseObjectIdentifierIndex = convertToPipe <$> some (char '.' *> (parseOptionalObjectIdentifierIndex <|> parseStandardObjectIdentifierIndex))
 
 convertToPipe :: [String] -> Filter
 convertToPipe [] = Identity
-convertToPipe [x] = ObjectIdentifierIndex x
-convertToPipe (x:xs) = Pipe (ObjectIdentifierIndex x, convertToPipe xs)
+convertToPipe [x] = if last x == '?' then OptionalObjectIdentifierIndex (init x) else ObjectIdentifierIndex x
+convertToPipe (x:xs) = Pipe (convertToPipe [x], convertToPipe xs)
 
-parseOptionalObjectIdentifierIndex :: Parser Filter
-parseOptionalObjectIdentifierIndex = OptionalObjectIdentifierIndex <$> (char '.' *> identifier <* char '?')
+parseOptionalObjectIdentifierIndex :: Parser String
+parseOptionalObjectIdentifierIndex = (++) <$> identifier <*> string "?" <|> (++) <$> charSeq <*> string "?" <|> (++) <$> (string "[" *> charSeq <* string "]") <*> string "?"
 
-parseGenericObjectIndex :: Parser Filter
-parseGenericObjectIndex = GenericObjectIndex <$> (string ".[" *> charSeq <* string "]")
+parseStandardObjectIdentifierIndex :: Parser String
+parseStandardObjectIdentifierIndex = identifier <|> charSeq <|> (string "[" *> charSeq <* string "]")
 
 parseArrayIndex :: Parser Filter
 parseArrayIndex = ArrayIndex <$> (string ".[" *> sepBy (space *> char ',' <* space) integer <* char ']')
@@ -48,7 +48,7 @@ parseFilter :: Parser Filter
 parseFilter = parseComplexFilter <|> parseSingleFilter
 
 parseSingleFilter :: Parser Filter
-parseSingleFilter = token (parseGroup <|> parseSlice <|> parseArrayIndex <|> parseGenericObjectIndex <|> parseOptionalObjectIdentifierIndex <|> parseObjectIdentifierIndex <|> parseValueIterator <|> parseIdentity)
+parseSingleFilter = token (parseGroup <|> parseSlice <|> parseArrayIndex <|> parseObjectIdentifierIndex <|> parseValueIterator <|> parseIdentity)
 
 parseComplexFilter :: Parser Filter
 parseComplexFilter = token (parsePipe <|> parseComma)
