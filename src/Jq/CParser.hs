@@ -5,9 +5,6 @@ import Jq.Filters
 
 parseIdentity :: Parser Filter
 parseIdentity = Identity <$ char '.'
-  
-parseValueIterator :: Parser Filter
-parseValueIterator = ValueIterator . (\x  -> last x == '?') <$> (string ".[]?" <|> string ".[]")
 
 parseObjectIdentifierIndex :: Parser Filter
 parseObjectIdentifierIndex = convertToPipe <$> some (char '.' *> (parseOptionalObjectIdentifierIndex <|> parseStandardObjectIdentifierIndex))
@@ -48,7 +45,7 @@ parseFilter :: Parser Filter
 parseFilter = parseComplexFilter <|> parseSingleFilter
 
 parseSingleFilter :: Parser Filter
-parseSingleFilter = token (parseGroup <|> parseSlice <|> parseArrayIndex <|> parseObjectIdentifierIndex <|> parseValueIterator <|> parseIdentity)
+parseSingleFilter = token (parseGroup <|> parseSlice <|> parseArrayIndex <|> parseObjectIdentifierIndex <|> parseIdentity)
 
 parseComplexFilter :: Parser Filter
 parseComplexFilter = token (parsePipe <|> parseComma)

@@ -23,7 +23,7 @@ formatArray n (x:xs) = replicate n ' ' ++ prettyPrint n x ++ ",\n" ++ formatArra
 prettyPrint :: Int -> JSON -> String
 prettyPrint _ JNull = "null"
 prettyPrint _ (JNum v) = if v == fromInteger (round v) then show (round v :: Integer) else show v
-prettyPrint _ (JBool b) = show b
+prettyPrint _ (JBool b) = if b then "true" else "false"
 prettyPrint _ (JString s) = show s
 prettyPrint n (JArray x) = "[\n" ++ formatArray (n + indent) x ++ "\n" ++ replicate n ' ' ++ "]"
 prettyPrint n (JObject x) = "{\n" ++ formatObject (n + indent) x ++ "\n" ++ replicate n ' ' ++ "}"

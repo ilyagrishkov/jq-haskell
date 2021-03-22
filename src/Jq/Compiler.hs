@@ -8,7 +8,6 @@ type JProgram a = JSON -> Either String a
 
 compile :: Filter -> JProgram [JSON]
 compile Identity = \inp -> Right [inp]
-compile (ValueIterator opt) = compileValueIterator opt
 compile (ObjectIdentifierIndex i) = compileObjectIdentifierIndex i
 compile (OptionalObjectIdentifierIndex i) = compileOptionalObjectIdentifierIndex i
 compile (ArrayIndex i) = compileArrayIndex i
@@ -36,6 +35,8 @@ compileOptionalObjectIdentifierIndex i (JObject o) =
 compileOptionalObjectIdentifierIndex _ _ = Right [JNull]
 
 compileArrayIndex :: [Int] -> JProgram[JSON]
+compileArrayIndex [] (JObject b) = Right (map snd b)
+compileArrayIndex [] (JArray a) = Right a
 compileArrayIndex i (JArray a) = Right (map (`findElem` a) i)
 compileArrayIndex _ _ = Left "cannot select element from non-array"
 
