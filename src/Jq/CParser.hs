@@ -24,7 +24,7 @@ parseStandardObjectIdentifierIndex :: Parser String
 parseStandardObjectIdentifierIndex = identifier <|> charSeq <|> (string "[" *> charSeq <* string "]")
 
 parseArrayIndex :: Parser Filter
-parseArrayIndex = ArrayIndex <$> (string ".[" *> sepBy (space *> char ',' <* space) integer <* char ']')
+parseArrayIndex = ArrayIndex <$> (string ".[" *> split (space *> char ',' <* space) integer <* char ']')
 
 parseSlice :: Parser Filter
 parseSlice = Slice <$> (string ".[" *> slice <* char ']')

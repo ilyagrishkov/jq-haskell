@@ -123,8 +123,8 @@ symbol :: String -> Parser String
 symbol xs = token (string xs)
 
 ---------------------------
-sepBy :: Parser a -> Parser b -> Parser [b]
-sepBy sep element = (:) <$> element <*> many (sep *> element) <|> pure []
+split :: Parser a -> Parser b -> Parser [b]
+split sep element = (:) <$> element <*> many (sep *> element) <|> pure []
 
 readNChars :: (Char -> Bool) -> Int -> Parser String
 readNChars f n = sequenceA (replicate n (sat f))

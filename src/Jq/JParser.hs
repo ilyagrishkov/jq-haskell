@@ -28,10 +28,10 @@ parseString = JString <$> charSeq
 parseArray :: Parser JSON
 parseArray = JArray <$> (char '[' *> space *> elems <* space <* char ']')
   where
-    elems = sepBy (space *> char ',' <* space) parseJSON
+    elems = split (space *> char ',' <* space) parseJSON
 
 parseObject :: Parser JSON
-parseObject = JObject <$> (char '{' *> space *> sepBy (space *> char ',' <* space) keyValue <* space <* char '}')
+parseObject = JObject <$> (char '{' *> space *> split (space *> char ',' <* space) keyValue <* space <* char '}')
   where
     keyValue = (\key _ val -> (key, val)) <$> charSeq <*> (space *> char ':' <* space) <*> parseJSON
 
