@@ -26,7 +26,7 @@ compileValueIterator (JString s) = error ("Cannot iterate over string (" ++ s ++
 compileValueIterator (JBool b) = error ("Cannot iterate over boolean (" ++ show b ++ ")")
 
 compileObjectIdentifierIndex :: String -> JProgram [JSON]
-compileObjectIdentifierIndex i (JObject o) =
+compileObjectIdentifierIndex i (JObject o) = 
   case map snd (filter (\(a, _) -> a == i) o) of
     [] -> Left "couldn't select anything"
     arr -> Right [last arr]
@@ -39,8 +39,8 @@ compileOptionalObjectIdentifierIndex i (JObject o) =
     arr -> Right arr
 compileOptionalObjectIdentifierIndex _ _ = Right [JNull]
 
-compileArrayIndex :: Int -> JProgram[JSON]
-compileArrayIndex i (JArray a) = Right [a !! i]
+compileArrayIndex :: [Int] -> JProgram[JSON]
+compileArrayIndex i (JArray a) = Right (map (`findElem` a) i)
 compileArrayIndex _ _ = Left "cannot select element from non-array"
 
 compileSlice :: Int -> Int -> JProgram[JSON]
@@ -53,5 +53,10 @@ compileComma f1 f2 inp = (++) <$> compile f1 inp <*> compile f2 inp
 compilePipe :: Filter -> Filter -> JProgram [JSON]
 compilePipe f1 f2 inp = compile f1 inp >>= foldr (\x -> (<*>) ((++) <$> compile f2 x)) (Right [])
       
+findElem :: Int -> [JSON] -> JSON
+findElem _ [] = JNull
+findElem 0 (x:_) = x
+findElem i (_:xs) = if i - 1 >= length xs then JNull else findElem (i - 1) xs
+
 run :: JProgram [JSON] -> JSON -> Either String [JSON]
 run p j = p j

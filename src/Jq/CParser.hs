@@ -10,7 +10,12 @@ parseValueIterator :: Parser Filter
 parseValueIterator = ValueIterator <$ string ".[]"
 
 parseObjectIdentifierIndex :: Parser Filter
-parseObjectIdentifierIndex = ObjectIdentifierIndex <$> (char '.' *> identifier)
+parseObjectIdentifierIndex = convertToPipe <$> some (char '.' *> identifier)
+
+convertToPipe :: [String] -> Filter
+convertToPipe [] = Identity
+convertToPipe [x] = ObjectIdentifierIndex x
+convertToPipe (x:xs) = Pipe (ObjectIdentifierIndex x, convertToPipe xs)
 
 parseOptionalObjectIdentifierIndex :: Parser Filter
 parseOptionalObjectIdentifierIndex = OptionalObjectIdentifierIndex <$> (char '.' *> identifier <* char '?')
@@ -19,7 +24,7 @@ parseGenericObjectIndex :: Parser Filter
 parseGenericObjectIndex = GenericObjectIndex <$> (string ".[" *> charSeq <* string "]")
 
 parseArrayIndex :: Parser Filter
-parseArrayIndex = ArrayIndex <$> (string ".[" *> integer <* char ']')
+parseArrayIndex = ArrayIndex <$> (string ".[" *> sepBy (space *> char ',' <* space) integer <* char ']')
 
 parseSlice :: Parser Filter
 parseSlice = Slice <$> (string ".[" *> slice <* char ']')
@@ -35,14 +40,9 @@ parsePipe :: Parser Filter
 parsePipe = Pipe <$> filtersPair
    where
      filtersPair = (\key _ val -> (key, val)) <$> parseSingleFilter <*> (space *> char '|' <* space) <*> parseFilter
-     
+
 parseGroup :: Parser Filter
 parseGroup = char '(' *> parseFilter <* char ')'
-     
-parseNestedObjectIndex :: Parser Filter
-parseNestedObjectIndex = Pipe <$> filtersPair
-  where
-     filtersPair = (\key val -> (ObjectIdentifierIndex key, val)) <$> (char '.' *> identifier) <*> parseNestedObjectIndex
 
 parseFilter :: Parser Filter
 parseFilter = parseComplexFilter <|> parseSingleFilter
@@ -50,8 +50,8 @@ parseFilter = parseComplexFilter <|> parseSingleFilter
 parseSingleFilter :: Parser Filter
 parseSingleFilter = token (parseGroup <|> parseSlice <|> parseArrayIndex <|> parseGenericObjectIndex <|> parseOptionalObjectIdentifierIndex <|> parseObjectIdentifierIndex <|> parseValueIterator <|> parseIdentity)
 
-parseComplexFilter :: Parser Filter 
-parseComplexFilter = token (parsePipe <|> parseComma <|> parseNestedObjectIndex)
+parseComplexFilter :: Parser Filter
+parseComplexFilter = token (parsePipe <|> parseComma)
 
 parseConfig :: [String] -> Either String Config
 parseConfig s = case s of
