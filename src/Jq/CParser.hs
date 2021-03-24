@@ -23,7 +23,12 @@ parseComplexFilter = token (parsePipe <|> parseComma)
 
 
 parseArrayExpander :: Parser Filter
-parseArrayExpander = ArrayExpander <$> parseSingleFilter <* string "[]"
+parseArrayExpander = Pipe <$> filtersPair
+  where
+    filtersPair = (\key val -> (key, val)) <$> parseSingleFilter <*> 
+      ((OptionalArrayIndex <$> (string "[" *> split (space *> char ',' <* space) integer <* string "]?")) <|>
+      (ArrayIndex <$> (string "[" *> split (space *> char ',' <* space) integer <* char ']')))
+
 
 parseIdentity :: Parser Filter
 parseIdentity = Identity <$ char '.'

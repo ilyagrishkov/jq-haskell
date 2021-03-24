@@ -19,21 +19,9 @@ compile (Pipe f) = uncurry compilePipe f
 compile (JSONVal v) = \_ -> Right [v]
 compile (ArrayConstructor a) = compileArrayConstructor a
 compile (ObjectConstructor o) = compileObjectConstructor o
-compile (ArrayExpander f) = compileArrayExpander f
 
 ----------------------------- 
 --- Filter compilers
-
-compileArrayExpander :: Filter -> JProgram [JSON]
-compileArrayExpander f inp = case compile f inp of
-  Right x -> expandArray x
-  Left _ -> Left ""
-
-expandArray :: [JSON] -> Either String [JSON]
-expandArray [] = Right []
-expandArray (JArray x:xs) = (++) <$> Right x <*> expandArray xs
-expandArray (JObject x:xs) = (++) <$> Right (map snd x)  <*> expandArray xs
-expandArray _ = Left ""
 
 compileValueIterator :: Bool -> JProgram [JSON]
 compileValueIterator _ (JObject b) = Right (map snd b)
