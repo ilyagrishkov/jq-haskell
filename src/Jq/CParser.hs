@@ -3,6 +3,7 @@ module Jq.CParser where
 import Parsing.Parsing
 import Jq.Filters
 import Jq.JParser (parseJSON)
+import Jq.Json
 
 
 -----------------------------
@@ -84,7 +85,7 @@ parseArrayConstructor = ArrayConstructor <$> (char '[' *> parseFilter <* char ']
 parseObjectConstructor :: Parser Filter
 parseObjectConstructor = ObjectConstructor <$> (char '{' *> space *> split (space *> char ',' <* space) keyValue <* space <* char '}')
   where
-    keyValue = (\key _ val -> (key, val)) <$> (charSeq <|> identifier) <*> (space *> char ':' <* space) <*> parseFilter
+    keyValue = (\key _ val -> if not (null val) then (key, head val) else (key, EmptyFilter)) <$> (parseSingleFilter <|> (JSONVal . JString <$> identifier)) <*> many (space *> char ':' <* space) <*> many parseFilter
 
 -----------------------------
 

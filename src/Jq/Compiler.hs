@@ -19,6 +19,7 @@ compile (Pipe f) = uncurry compilePipe f
 compile (JSONVal v) = \_ -> Right [v]
 compile (ArrayConstructor a) = compileArrayConstructor a
 compile (ObjectConstructor o) = compileObjectConstructor o
+compile EmptyFilter = error "Empty filter should not appear"
 
 ----------------------------- 
 --- Filter compilers
@@ -68,15 +69,26 @@ compileArrayConstructor f inp = case compile f inp of
   Left _ -> Right [JArray []]
   Right x -> Right [JArray x]
 
-compileObjectConstructor :: [(String, Filter)] -> JProgram [JSON]
+compileObjectConstructor :: [(Filter, Filter)] -> JProgram [JSON]
 compileObjectConstructor [] _ = Right [JNull]
 compileObjectConstructor [jElem] inp = compileSingleObjectConstructor jElem inp
 compileObjectConstructor (jElem:jElems) inp = (++) <$> compileSingleObjectConstructor jElem inp <*> compileObjectConstructor jElems inp
 
-compileSingleObjectConstructor :: (String, Filter) -> JProgram [JSON]
-compileSingleObjectConstructor (a, f) inp = Right [JObject [(a, y)] | y <- case compile f inp of 
+compileSingleObjectConstructor :: (Filter, Filter) -> JProgram [JSON]
+compileSingleObjectConstructor (JSONVal (JString a), EmptyFilter) inp = Right [JObject [(a, y)] | y <- case compile (ObjectIdentifierIndex a) inp of 
+    Right x -> x
+    Left _ -> [JNull]]
+compileSingleObjectConstructor (JSONVal (JString a), f) inp = Right [JObject [(a, y)] | y <- case compile f inp of 
   Right x -> x 
   Left _ -> []]
+compileSingleObjectConstructor (a, f) inp = Right [JObject [(x, y)] | y <- case compile f inp of 
+    Right z -> z
+    Left _ -> []]
+  where 
+    x = case compile a inp of
+      Right [JString s] -> s
+      Right _ -> error "unable to use non string key"
+      Left _ -> []
   
 ----------------------------- 
     
