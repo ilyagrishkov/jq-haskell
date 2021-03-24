@@ -4,6 +4,23 @@ import Parsing.Parsing
 import Jq.Filters
 import Jq.JParser (parseJSON)
 
+
+-----------------------------
+
+parseFilter :: Parser Filter
+parseFilter = parseComplexFilter <|> parseSingleFilter <|> parseJsonFilter
+  <|> parseArrayConstructor <|> parseObjectConstructor
+
+parseSingleFilter :: Parser Filter
+parseSingleFilter = token (parseGroup <|> parseOptionalSlice <|> parseSlice <|> parseOptionalArrayIndex
+  <|> parseArrayIndex <|> parseObjectIdentifierIndex <|> parseIdentity)
+
+parseComplexFilter :: Parser Filter
+parseComplexFilter = token (parsePipe <|> parseComma)
+
+-----------------------------
+--- Filter parsers
+
 parseIdentity :: Parser Filter
 parseIdentity = Identity <$ char '.'
 
@@ -31,35 +48,27 @@ parseSlice :: Parser Filter
 parseSlice = Slice <$> (string ".[" *> slice <* char ']')
   where 
     slice = (\a _ c -> (a, c)) <$> integer <*> string ":" <*> integer
-    
+
 parseOptionalSlice :: Parser Filter
 parseOptionalSlice = OptionalSlice <$> (string ".[" *> slice <* string "]?")
-  where 
+  where
     slice = (\a _ c -> (a, c)) <$> integer <*> string ":" <*> integer
   
 parseComma :: Parser Filter
 parseComma = Comma <$> filtersPair
    where
-     filtersPair = (\key _ val -> (key, val)) <$> parseSingleFilter <*> (space *> char ',' <* space) <*> parseFilter
+     filtersPair = (\key _ val -> (key, val)) <$> parseSingleFilter <*> (space *> char ',' <* space) <*> (parseComma <|> parseSingleFilter)
      
 parsePipe :: Parser Filter
 parsePipe = Pipe <$> filtersPair
    where
-     filtersPair = (\key _ val -> (key, val)) <$> parseSingleFilter <*> (space *> char '|' <* space) <*> parseFilter
+     filtersPair = (\key _ val -> (key, val)) <$> (parseComma <|> parseSingleFilter) <*> (space *> char '|' <* space) <*> parseFilter
 
 parseGroup :: Parser Filter
 parseGroup = char '(' *> parseFilter <* char ')'
 
-parseFilter :: Parser Filter
-parseFilter = parseComplexFilter <|> parseSingleFilter <|> parseJsonFilter <|> parseArrayConstructor <|> parseObjectConstructor
-
-parseSingleFilter :: Parser Filter
-parseSingleFilter = token (parseGroup <|> parseOptionalSlice <|> parseSlice <|> parseOptionalArrayIndex <|> parseArrayIndex <|> parseObjectIdentifierIndex <|> parseIdentity)
-
-parseComplexFilter :: Parser Filter
-parseComplexFilter = token (parsePipe <|> parseComma)
-
-----------------------------------
+-----------------------------
+--- Value constructors parsers
 
 parseJsonFilter :: Parser Filter
 parseJsonFilter = JSONVal <$> parseJSON
@@ -71,6 +80,8 @@ parseObjectConstructor :: Parser Filter
 parseObjectConstructor = ObjectConstructor <$> (char '{' *> space *> split (space *> char ',' <* space) keyValue <* space <* char '}')
   where
     keyValue = (\key _ val -> (key, val)) <$> charSeq <*> (space *> char ':' <* space) <*> parseFilter
+
+-----------------------------
 
 parseConfig :: [String] -> Either String Config
 parseConfig s = case s of

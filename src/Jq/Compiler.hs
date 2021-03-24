@@ -20,6 +20,9 @@ compile (JSONVal v) = \_ -> Right [v]
 compile (ArrayConstructor a) = compileArrayConstructor a
 compile (ObjectConstructor o) = compileObjectConstructor o
 
+----------------------------- 
+--- Filter compilers
+
 compileValueIterator :: Bool -> JProgram [JSON]
 compileValueIterator _ (JObject b) = Right (map snd b)
 compileValueIterator _ (JArray a) = Right a
@@ -56,6 +59,10 @@ findElem _ [] = JNull
 findElem 0 (x:_) = x
 findElem i (_:xs) = if i - 1 >= length xs then JNull else findElem (i - 1) xs
 
+
+----------------------------- 
+--- Value Constructors
+
 compileArrayConstructor :: Filter -> JProgram [JSON]
 compileArrayConstructor f inp = case compile f inp of
   Left _ -> Right [JArray []]
@@ -70,6 +77,8 @@ compileSingleObjectConstructor :: (String, Filter) -> JProgram [JSON]
 compileSingleObjectConstructor (a, f) inp = Right [JObject [(a, y)] | y <- case compile f inp of 
   Right x -> x 
   Left _ -> []]
+  
+----------------------------- 
     
 run :: JProgram [JSON] -> JSON -> Either String [JSON]
 run p j = p j
