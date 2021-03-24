@@ -26,10 +26,11 @@ compileValueIterator _ (JArray a) = Right a
 compileValueIterator opt _ = if opt then Right [] else Left "Cannot iterate"
 
 compileObjectIdentifierIndex :: String -> Bool -> JProgram [JSON]
-compileObjectIdentifierIndex i opt (JObject o) = 
+compileObjectIdentifierIndex i opt (JObject o) =
   case map snd (filter (\(a, _) -> a == i) o) of
     [] -> if opt then Right [JNull] else Left "couldn't select anything"
     arr -> Right [last arr]
+compileObjectIdentifierIndex _ _ JNull = Right [JNull]
 compileObjectIdentifierIndex _ opt _ = if opt then Right [] else Left "couldn't select anything"
 
 compileArrayIndex :: [Int] -> Bool -> JProgram[JSON]
@@ -59,17 +60,16 @@ compileArrayConstructor :: Filter -> JProgram [JSON]
 compileArrayConstructor f inp = case compile f inp of
   Left _ -> Right [JArray []]
   Right x -> Right [JArray x]
-    
+
 compileObjectConstructor :: [(String, Filter)] -> JProgram [JSON]
 compileObjectConstructor [] _ = Right [JNull]
 compileObjectConstructor [jElem] inp = compileSingleObjectConstructor jElem inp
 compileObjectConstructor (jElem:jElems) inp = (++) <$> compileSingleObjectConstructor jElem inp <*> compileObjectConstructor jElems inp
 
 compileSingleObjectConstructor :: (String, Filter) -> JProgram [JSON]
-compileSingleObjectConstructor (a, b) inp = Right [JObject [(a, y) | 
-  y <- case compile b inp of 
-    Right x -> x 
-    Left _ -> []]]
-
+compileSingleObjectConstructor (a, f) inp = Right [JObject [(a, y)] | y <- case compile f inp of 
+  Right x -> x 
+  Left _ -> []]
+    
 run :: JProgram [JSON] -> JSON -> Either String [JSON]
 run p j = p j
