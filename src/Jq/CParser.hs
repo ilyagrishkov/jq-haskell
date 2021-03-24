@@ -25,7 +25,7 @@ parseComplexFilter = token (parsePipe <|> parseComma)
 parseArrayExpander :: Parser Filter
 parseArrayExpander = Pipe <$> filtersPair
   where
-    filtersPair = (\key val -> (key, val)) <$> parseSingleFilter <*> 
+    filtersPair = (\key val -> (key, val)) <$> parseSingleFilter <*>
       ((OptionalArrayIndex <$> (string "[" *> split (space *> char ',' <* space) integer <* string "]?")) <|>
       (ArrayIndex <$> (string "[" *> split (space *> char ',' <* space) integer <* char ']')))
 
@@ -36,16 +36,15 @@ parseIdentity = Identity <$ char '.'
 parseObjectIdentifierIndex :: Parser Filter
 parseObjectIdentifierIndex = convertToPipe <$> some (char '.' *> (parseOptionalObjectIdentifierIndex <|> parseStandardObjectIdentifierIndex))
 
-convertToPipe :: [String] -> Filter
+convertToPipe :: [Filter] -> Filter
 convertToPipe [] = Identity
-convertToPipe [x] = if last x == '?' then OptionalObjectIdentifierIndex (init x) else ObjectIdentifierIndex x
-convertToPipe (x:xs) = Pipe (convertToPipe [x], convertToPipe xs)
+convertToPipe (x:xs) = Pipe (x, convertToPipe xs)
 
-parseOptionalObjectIdentifierIndex :: Parser String
-parseOptionalObjectIdentifierIndex = (++) <$> identifier <*> string "?" <|> (++) <$> charSeq <*> string "?" <|> (++) <$> (string "[" *> charSeq <* string "]") <*> string "?"
+parseOptionalObjectIdentifierIndex :: Parser Filter
+parseOptionalObjectIdentifierIndex = OptionalObjectIdentifierIndex <$> (identifier <* string "?" <|> charSeq <* string "?" <|> (string "[" *> charSeq <* string "]?"))
 
-parseStandardObjectIdentifierIndex :: Parser String
-parseStandardObjectIdentifierIndex = identifier <|> charSeq <|> (string "[" *> charSeq <* string "]")
+parseStandardObjectIdentifierIndex :: Parser Filter 
+parseStandardObjectIdentifierIndex = ObjectIdentifierIndex <$> (identifier <|> charSeq <|> (string "[" *> charSeq <* string "]"))
 
 parseArrayIndex :: Parser Filter
 parseArrayIndex = ArrayIndex <$> (string ".[" *> split (space *> char ',' <* space) integer <* char ']')
