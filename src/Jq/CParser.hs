@@ -8,7 +8,7 @@ import Jq.JParser (parseJSON)
 -----------------------------
 
 parseFilter :: Parser Filter
-parseFilter = parseComplexFilter <|> parseSingleFilter <|> parseJsonFilter
+parseFilter = parseArrayExpander <|> parseComplexFilter <|> parseSingleFilter <|> parseJsonFilter
   <|> parseArrayConstructor <|> parseObjectConstructor
 
 parseSingleFilter :: Parser Filter
@@ -20,6 +20,10 @@ parseComplexFilter = token (parsePipe <|> parseComma)
 
 -----------------------------
 --- Filter parsers
+
+
+parseArrayExpander :: Parser Filter
+parseArrayExpander = ArrayExpander <$> parseSingleFilter <* string "[]"
 
 parseIdentity :: Parser Filter
 parseIdentity = Identity <$ char '.'
@@ -57,12 +61,12 @@ parseOptionalSlice = OptionalSlice <$> (string ".[" *> slice <* string "]?")
 parseComma :: Parser Filter
 parseComma = Comma <$> filtersPair
    where
-     filtersPair = (\key _ val -> (key, val)) <$> parseSingleFilter <*> (space *> char ',' <* space) <*> (parseComma <|> parseSingleFilter)
+     filtersPair = (\key _ val -> (key, val)) <$> (parseArrayExpander <|> parseSingleFilter) <*> (space *> char ',' <* space) <*> (parseArrayExpander <|> parseComma <|> parseSingleFilter)
      
 parsePipe :: Parser Filter
 parsePipe = Pipe <$> filtersPair
    where
-     filtersPair = (\key _ val -> (key, val)) <$> (parseComma <|> parseSingleFilter) <*> (space *> char '|' <* space) <*> parseFilter
+     filtersPair = (\key _ val -> (key, val)) <$> (parseArrayExpander <|> parseComma <|> parseSingleFilter) <*> (space *> char '|' <* space) <*> parseFilter
 
 parseGroup :: Parser Filter
 parseGroup = char '(' *> parseFilter <* char ')'
