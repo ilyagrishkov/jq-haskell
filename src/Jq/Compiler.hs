@@ -12,9 +12,12 @@ compile (ObjectIdentifierIndex i) = compileObjectIdentifierIndex i False
 compile (OptionalObjectIdentifierIndex i) = compileObjectIdentifierIndex i True
 compile (ArrayIndex i) = compileArrayIndex i False
 compile (OptionalArrayIndex i) = compileArrayIndex i True
-compile (Slice s) = uncurry compileSlice s
+compile (Slice s) = uncurry compileSlice s False
+compile (OptionalSlice s) = uncurry compileSlice s True
 compile (Comma f) = uncurry compileComma f
 compile (Pipe f) = uncurry compilePipe f
+compile (JSONVal v) = \_ -> Right [v]
+compile (ArrayConstructor a) = compileArrayConstructor a
 
 compileValueIterator :: Bool -> JProgram [JSON]
 compileValueIterator _ (JObject b) = Right (map snd b)
@@ -34,9 +37,9 @@ compileArrayIndex [] _ (JArray a) = Right a
 compileArrayIndex i _ (JArray a) = Right (map (`findElem` a) i)
 compileArrayIndex _ opt _ = if opt then Right [] else Left "cannot select element from non-array"
 
-compileSlice :: Int -> Int -> JProgram[JSON]
-compileSlice s t (JArray a) = Right (take t (drop s a))
-compileSlice _ _ _ = Left "cannot slice over non array element"
+compileSlice :: Int -> Int -> Bool -> JProgram[JSON]
+compileSlice s t _ (JArray a) = Right (take t (drop s a))
+compileSlice _ _ opt _ = if opt then Right [] else Left "cannot slice over non array element"
 
 compileComma :: Filter -> Filter -> JProgram [JSON]
 compileComma f1 f2 inp = (++) <$> compile f1 inp <*> compile f2 inp
@@ -48,6 +51,19 @@ findElem :: Int -> [JSON] -> JSON
 findElem _ [] = JNull
 findElem 0 (x:_) = x
 findElem i (_:xs) = if i - 1 >= length xs then JNull else findElem (i - 1) xs
+
+compileArrayConstructor :: Filter -> JProgram [JSON]
+compileArrayConstructor f inp = case compile f inp of
+  Left _ -> Right [JArray []]
+  Right x -> Right [JArray x]
+    
+compileObjectConstructor :: Filter -> Filter -> JProgram [JSON]
+compileObjectConstructor f1 f2 inp = undefined
+
+
+compileObjectConstructorKey :: Filter -> JProgram [JSON]
+compileObjectConstructorKey f inp = undefined
+  
 
 run :: JProgram [JSON] -> JSON -> Either String [JSON]
 run p j = p j
