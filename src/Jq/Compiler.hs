@@ -61,8 +61,15 @@ compileArrayConstructor f inp = case compile f inp of
   Right x -> Right [JArray x]
     
 compileObjectConstructor :: [(String, Filter)] -> JProgram [JSON]
-compileObjectConstructor elem inp = undefined
-  
+compileObjectConstructor [] _ = Right [JNull]
+compileObjectConstructor [jElem] inp = compileSingleObjectConstructor jElem inp
+compileObjectConstructor (jElem:jElems) inp = (++) <$> compileSingleObjectConstructor jElem inp <*> compileObjectConstructor jElems inp
+
+compileSingleObjectConstructor :: (String, Filter) -> JProgram [JSON]
+compileSingleObjectConstructor (a, b) inp = Right [JObject [(a, y) | 
+  y <- case compile b inp of 
+    Right x -> x 
+    Left _ -> []]]
 
 run :: JProgram [JSON] -> JSON -> Either String [JSON]
 run p j = p j
