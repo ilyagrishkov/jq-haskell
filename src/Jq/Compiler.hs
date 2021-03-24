@@ -71,24 +71,29 @@ compileArrayConstructor f inp = case compile f inp of
 
 compileObjectConstructor :: [(Filter, Filter)] -> JProgram [JSON]
 compileObjectConstructor [] _ = Right [JNull]
-compileObjectConstructor [jElem] inp = compileSingleObjectConstructor jElem inp
-compileObjectConstructor (jElem:jElems) inp = (++) <$> compileSingleObjectConstructor jElem inp <*> compileObjectConstructor jElems inp
+compileObjectConstructor [jElem] inp = case compileSingleObjectConstructor jElem inp of
+  Right x -> Right [JObject x]
+  Left _ -> Left "some error"
+compileObjectConstructor (jElem:jElems) inp = case (compileSingleObjectConstructor jElem inp, compileObjectConstructor jElems inp) of
+  (Right x, Right [JObject o]) -> Right [JObject (x ++ o)]
+  (_, _) -> Left ""
 
-compileSingleObjectConstructor :: (Filter, Filter) -> JProgram [JSON]
-compileSingleObjectConstructor (JSONVal (JString a), EmptyFilter) inp = Right [JObject [(a, y)] | y <- case compile (ObjectIdentifierIndex a) inp of 
-    Right x -> x
-    Left _ -> [JNull]]
-compileSingleObjectConstructor (JSONVal (JString a), f) inp = Right [JObject [(a, y)] | y <- case compile f inp of 
+
+compileSingleObjectConstructor :: (Filter, Filter) -> JProgram [(String, JSON)]
+compileSingleObjectConstructor (JSONVal (JString a), EmptyFilter) inp = Right [(a, y) | y <- case compile (ObjectIdentifierIndex a) inp of
+  Right x -> x
+  Left _ -> [JNull]]
+compileSingleObjectConstructor (JSONVal (JString a), f) inp = Right [(a, y) | y <- case compile f inp of
   Right x -> x 
   Left _ -> []]
-compileSingleObjectConstructor (a, f) inp = Right [JObject [(x, y)] | y <- case compile f inp of 
-    Right z -> z
-    Left _ -> []]
-  where 
-    x = case compile a inp of
-      Right [JString s] -> s
-      Right _ -> error "unable to use non string key"
-      Left _ -> []
+compileSingleObjectConstructor (a, f) inp = Right [(x, y) | y <- case compile f inp of
+  Right z -> z
+  Left _ -> []]
+    where
+      x = case compile a inp of
+        Right [JString s] -> s
+        Right _ -> error "unable to use non string key"
+        Left _ -> []
   
 ----------------------------- 
     

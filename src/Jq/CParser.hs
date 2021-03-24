@@ -27,13 +27,13 @@ parseSequentialFilters :: Parser Filter
 parseSequentialFilters = convertToPipe <$> ((:) <$> parsePrimaryFilters <*> many parseSecondaryFilters)
 
 parsePrimaryFilters :: Parser Filter
-parsePrimaryFilters = parseOptionalSlice <|> parseSlice <|> parseOptionalArrayIndex <|> parseArrayIndex 
+parsePrimaryFilters = parseOptionalSlice <|> parseSlice <|> parseOptionalArrayIndex <|> parseArrayIndex
   <|> parseOptionalObjectIdentifierIndex <|> parseStandardObjectIdentifierIndex <|> parseIdentity
-  
+
 parseSecondaryFilters :: Parser Filter
-parseSecondaryFilters = parseOptionalSlice <|> parseSlice <|> parseOptionalArrayIndex <|> parseArrayIndex 
+parseSecondaryFilters = parseOptionalSlice <|> parseSlice <|> parseOptionalArrayIndex <|> parseArrayIndex
   <|> parseOptionalObjectIdentifierIndex <|> parseStandardObjectIdentifierIndex
-  
+
 convertToPipe :: [Filter] -> Filter
 convertToPipe [] = Identity
 convertToPipe (x:xs) = Pipe (x, convertToPipe xs)
@@ -41,7 +41,7 @@ convertToPipe (x:xs) = Pipe (x, convertToPipe xs)
 parseOptionalObjectIdentifierIndex :: Parser Filter
 parseOptionalObjectIdentifierIndex = OptionalObjectIdentifierIndex <$> (char '.' *> (identifier <* string "?" <|> charSeq <* string "?" <|> (string "[" *> charSeq <* string "]?")))
 
-parseStandardObjectIdentifierIndex :: Parser Filter 
+parseStandardObjectIdentifierIndex :: Parser Filter
 parseStandardObjectIdentifierIndex = ObjectIdentifierIndex <$> (char '.' *> (identifier <|> charSeq <|> (string "[" *> charSeq <* string "]")))
 
 parseArrayIndex :: Parser Filter
@@ -85,7 +85,7 @@ parseArrayConstructor = ArrayConstructor <$> (char '[' *> parseFilter <* char ']
 parseObjectConstructor :: Parser Filter
 parseObjectConstructor = ObjectConstructor <$> (char '{' *> space *> split (space *> char ',' <* space) keyValue <* space <* char '}')
   where
-    keyValue = (\key _ val -> if not (null val) then (key, head val) else (key, EmptyFilter)) <$> (parseSingleFilter <|> (JSONVal . JString <$> identifier)) <*> many (space *> char ':' <* space) <*> many parseFilter
+    keyValue = (\key _ val -> if not (null val) then (key, head val) else (key, EmptyFilter)) <$> (parseSingleFilter <|> (JSONVal . JString <$> (identifier <|> charSeq))) <*> many (space *> char ':' <* space) <*> many parseFilter
 
 -----------------------------
 
