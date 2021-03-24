@@ -25,5 +25,5 @@ prettyPrint _ JNull = "null"
 prettyPrint _ (JNum v) = if v == fromInteger (round v) then show (round v :: Integer) else show v
 prettyPrint _ (JBool b) = if b then "true" else "false"
 prettyPrint _ (JString s) = show s
-prettyPrint n (JArray x) = "[\n" ++ formatArray (n + indent) x ++ "\n" ++ replicate n ' ' ++ "]"
-prettyPrint n (JObject x) = "{\n" ++ formatObject (n + indent) x ++ "\n" ++ replicate n ' ' ++ "}"
+prettyPrint n (JArray x) = if not (null x) then "[\n" ++ formatArray (n + indent) x ++ "\n" ++ replicate n ' ' ++ "]" else "[]"
+prettyPrint n (JObject x) = if not (null x) then "{\n" ++ formatObject (n + indent) x ++ "\n" ++ replicate n ' ' ++ "}" else "{}"

@@ -18,6 +18,7 @@ compile (Comma f) = uncurry compileComma f
 compile (Pipe f) = uncurry compilePipe f
 compile (JSONVal v) = \_ -> Right [v]
 compile (ArrayConstructor a) = compileArrayConstructor a
+compile (ObjectConstructor o) = compileObjectConstructor o
 
 compileValueIterator :: Bool -> JProgram [JSON]
 compileValueIterator _ (JObject b) = Right (map snd b)
@@ -25,9 +26,9 @@ compileValueIterator _ (JArray a) = Right a
 compileValueIterator opt _ = if opt then Right [] else Left "Cannot iterate"
 
 compileObjectIdentifierIndex :: String -> Bool -> JProgram [JSON]
-compileObjectIdentifierIndex i _ (JObject o) = 
+compileObjectIdentifierIndex i opt (JObject o) = 
   case map snd (filter (\(a, _) -> a == i) o) of
-    [] -> Left "couldn't select anything"
+    [] -> if opt then Right [JNull] else Left "couldn't select anything"
     arr -> Right [last arr]
 compileObjectIdentifierIndex _ opt _ = if opt then Right [] else Left "couldn't select anything"
 
@@ -38,7 +39,9 @@ compileArrayIndex i _ (JArray a) = Right (map (`findElem` a) i)
 compileArrayIndex _ opt _ = if opt then Right [] else Left "cannot select element from non-array"
 
 compileSlice :: Int -> Int -> Bool -> JProgram[JSON]
-compileSlice s t _ (JArray a) = Right (take t (drop s a))
+compileSlice s t _ (JArray a) = Right [JArray (take (t - 1) (drop s a))]
+compileSlice s t _ (JString str) = Right [JString (take (t - 1) (drop s str))]
+compileSlice _ _ _ JNull = Right [JNull]
 compileSlice _ _ opt _ = if opt then Right [] else Left "cannot slice over non array element"
 
 compileComma :: Filter -> Filter -> JProgram [JSON]
@@ -57,12 +60,8 @@ compileArrayConstructor f inp = case compile f inp of
   Left _ -> Right [JArray []]
   Right x -> Right [JArray x]
     
-compileObjectConstructor :: Filter -> Filter -> JProgram [JSON]
-compileObjectConstructor f1 f2 inp = undefined
-
-
-compileObjectConstructorKey :: Filter -> JProgram [JSON]
-compileObjectConstructorKey f inp = undefined
+compileObjectConstructor :: [(String, Filter)] -> JProgram [JSON]
+compileObjectConstructor elem inp = undefined
   
 
 run :: JProgram [JSON] -> JSON -> Either String [JSON]

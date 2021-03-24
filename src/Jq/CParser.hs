@@ -70,7 +70,7 @@ parseArrayConstructor = ArrayConstructor <$> (char '[' *> parseFilter <* char ']
 parseObjectConstructor :: Parser Filter
 parseObjectConstructor = ObjectConstructor <$> (char '{' *> space *> split (space *> char ',' <* space) keyValue <* space <* char '}')
   where
-    keyValue = (\key _ val -> (key, val)) <$> parseFilter <*> (space *> char ':' <* space) <*> parseFilter
+    keyValue = (\key _ val -> (key, val)) <$> charSeq <*> (space *> char ':' <* space) <*> parseFilter
 
 parseConfig :: [String] -> Either String Config
 parseConfig s = case s of
