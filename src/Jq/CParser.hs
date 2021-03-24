@@ -8,12 +8,10 @@ import Jq.JParser (parseJSON)
 -----------------------------
 
 parseFilter :: Parser Filter
-parseFilter = parseArrayExpander <|> parseComplexFilter <|> parseSingleFilter <|> parseJsonFilter
-  <|> parseArrayConstructor <|> parseObjectConstructor
+parseFilter =  parseJsonFilter <|> parseArrayConstructor <|> parseObjectConstructor <|> parseComplexFilter <|> parseSingleFilter
 
 parseSingleFilter :: Parser Filter
-parseSingleFilter = token (parseGroup <|> parseOptionalSlice <|> parseSlice <|> parseOptionalArrayIndex
-  <|> parseArrayIndex <|> parseObjectIdentifierIndex <|> parseIdentity)
+parseSingleFilter = token (parseGroup <|> parseSequentialFilters)
 
 parseComplexFilter :: Parser Filter
 parseComplexFilter = token (parsePipe <|> parseComma)
@@ -21,56 +19,55 @@ parseComplexFilter = token (parsePipe <|> parseComma)
 -----------------------------
 --- Filter parsers
 
-
-parseArrayExpander :: Parser Filter
-parseArrayExpander = Pipe <$> filtersPair
-  where
-    filtersPair = (\key val -> (key, val)) <$> parseSingleFilter <*>
-      ((OptionalArrayIndex <$> (string "[" *> split (space *> char ',' <* space) integer <* string "]?")) <|>
-      (ArrayIndex <$> (string "[" *> split (space *> char ',' <* space) integer <* char ']')))
-
-
 parseIdentity :: Parser Filter
 parseIdentity = Identity <$ char '.'
 
-parseObjectIdentifierIndex :: Parser Filter
-parseObjectIdentifierIndex = convertToPipe <$> some (char '.' *> (parseOptionalObjectIdentifierIndex <|> parseStandardObjectIdentifierIndex))
+parseSequentialFilters :: Parser Filter
+parseSequentialFilters = convertToPipe <$> ((:) <$> parsePrimaryFilters <*> many parseSecondaryFilters)
 
+parsePrimaryFilters :: Parser Filter
+parsePrimaryFilters = parseOptionalSlice <|> parseSlice <|> parseOptionalArrayIndex <|> parseArrayIndex 
+  <|> parseOptionalObjectIdentifierIndex <|> parseStandardObjectIdentifierIndex <|> parseIdentity
+  
+parseSecondaryFilters :: Parser Filter
+parseSecondaryFilters = parseOptionalSlice <|> parseSlice <|> parseOptionalArrayIndex <|> parseArrayIndex 
+  <|> parseOptionalObjectIdentifierIndex <|> parseStandardObjectIdentifierIndex
+  
 convertToPipe :: [Filter] -> Filter
 convertToPipe [] = Identity
 convertToPipe (x:xs) = Pipe (x, convertToPipe xs)
 
 parseOptionalObjectIdentifierIndex :: Parser Filter
-parseOptionalObjectIdentifierIndex = OptionalObjectIdentifierIndex <$> (identifier <* string "?" <|> charSeq <* string "?" <|> (string "[" *> charSeq <* string "]?"))
+parseOptionalObjectIdentifierIndex = OptionalObjectIdentifierIndex <$> (char '.' *> (identifier <* string "?" <|> charSeq <* string "?" <|> (string "[" *> charSeq <* string "]?")))
 
 parseStandardObjectIdentifierIndex :: Parser Filter 
-parseStandardObjectIdentifierIndex = ObjectIdentifierIndex <$> (identifier <|> charSeq <|> (string "[" *> charSeq <* string "]"))
+parseStandardObjectIdentifierIndex = ObjectIdentifierIndex <$> (char '.' *> (identifier <|> charSeq <|> (string "[" *> charSeq <* string "]")))
 
 parseArrayIndex :: Parser Filter
-parseArrayIndex = ArrayIndex <$> (string ".[" *> split (space *> char ',' <* space) integer <* char ']')
+parseArrayIndex = ArrayIndex <$> (string "[" *> split (space *> char ',' <* space) integer <* char ']')
 
 parseOptionalArrayIndex :: Parser Filter
-parseOptionalArrayIndex = OptionalArrayIndex <$> (string ".[" *> split (space *> char ',' <* space) integer <* string "]?")
+parseOptionalArrayIndex = OptionalArrayIndex <$> (string "[" *> split (space *> char ',' <* space) integer <* string "]?")
 
 parseSlice :: Parser Filter
-parseSlice = Slice <$> (string ".[" *> slice <* char ']')
+parseSlice = Slice <$> (string "[" *> slice <* char ']')
   where 
     slice = (\a _ c -> (a, c)) <$> integer <*> string ":" <*> integer
 
 parseOptionalSlice :: Parser Filter
-parseOptionalSlice = OptionalSlice <$> (string ".[" *> slice <* string "]?")
+parseOptionalSlice = OptionalSlice <$> (string "[" *> slice <* string "]?")
   where
     slice = (\a _ c -> (a, c)) <$> integer <*> string ":" <*> integer
   
 parseComma :: Parser Filter
 parseComma = Comma <$> filtersPair
    where
-     filtersPair = (\key _ val -> (key, val)) <$> (parseArrayExpander <|> parseSingleFilter) <*> (space *> char ',' <* space) <*> (parseArrayExpander <|> parseComma <|> parseSingleFilter)
+     filtersPair = (\key _ val -> (key, val)) <$> parseSingleFilter <*> (space *> char ',' <* space) <*> (parseComma <|> parseSingleFilter)
      
 parsePipe :: Parser Filter
 parsePipe = Pipe <$> filtersPair
    where
-     filtersPair = (\key _ val -> (key, val)) <$> (parseArrayExpander <|> parseComma <|> parseSingleFilter) <*> (space *> char '|' <* space) <*> parseFilter
+     filtersPair = (\key _ val -> (key, val)) <$> (parseComma <|> parseSingleFilter) <*> (space *> char '|' <* space) <*> parseFilter
 
 parseGroup :: Parser Filter
 parseGroup = char '(' *> parseFilter <* char ')'
