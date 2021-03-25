@@ -72,28 +72,32 @@ compileArrayConstructor f inp = case compile f inp of
 compileObjectConstructor :: [(Filter, Filter)] -> JProgram [JSON]
 compileObjectConstructor [] _ = Right [JNull]
 compileObjectConstructor [jElem] inp = case compileSingleObjectConstructor jElem inp of
-  Right x -> Right [JObject x]
-  Left _ -> Left "some error"
+  Right x -> Right [JObject [y] | y <- x]
+  Left x -> Left x
 compileObjectConstructor (jElem:jElems) inp = case (compileSingleObjectConstructor jElem inp, compileObjectConstructor jElems inp) of
-  (Right x, Right [JObject o]) -> Right [JObject (x ++ o)]
-  (_, _) -> Left ""
+  (Right x, Right [JObject o]) -> Right [JObject (y:o) | y <- x]
+  _ -> Left "Error when compiling object constructor"
 
 
 compileSingleObjectConstructor :: (Filter, Filter) -> JProgram [(String, JSON)]
-compileSingleObjectConstructor (JSONVal (JString a), EmptyFilter) inp = Right [(a, y) | y <- case compile (ObjectIdentifierIndex a) inp of
-  Right x -> x
-  Left _ -> [JNull]]
-compileSingleObjectConstructor (JSONVal (JString a), f) inp = Right [(a, y) | y <- case compile f inp of
-  Right x -> x 
-  Left _ -> []]
-compileSingleObjectConstructor (a, f) inp = Right [(x, y) | y <- case compile f inp of
-  Right z -> z
-  Left _ -> []]
-    where
-      x = case compile a inp of
-        Right [JString s] -> s
-        Right _ -> error "unable to use non string key"
-        Left _ -> []
+compileSingleObjectConstructor (JSONVal (JString a), EmptyFilter) inp = Right [(a, y) | y <- value]
+  where 
+    value = case compile (ObjectIdentifierIndex a) inp of
+      Right x -> x
+      Left _ -> [JNull]
+compileSingleObjectConstructor (JSONVal (JString a), f) inp = Right [(a, y) | y <- value]
+  where 
+    value = case compile f inp of
+      Right x -> x
+      Left _ -> [JNull]
+compileSingleObjectConstructor (a, f) inp = Right [(key, y) | y <- value]
+  where
+    key = case compile a inp of
+      Right [JString s] -> s
+      _ -> error "unable to use non string key"
+    value = case compile f inp of
+      Right x -> x
+      Left _ -> [JNull]
   
 ----------------------------- 
     
