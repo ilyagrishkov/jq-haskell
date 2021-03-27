@@ -71,19 +71,19 @@ compileArrayConstructor f inp = case compile f inp of
 
 compileObjectConstructor :: [(Filter, Filter)] -> JProgram [JSON]
 compileObjectConstructor [] _ = error "Expected non-empty object constrcutor" -- should never occur
-compileObjectConstructor [jElem] inp = compileSingleObjectConstructor jElem inp 
+compileObjectConstructor [jElem] inp = compileSingleObjectConstructor jElem inp
 compileObjectConstructor (jElem:jElems) inp = case (compileSingleObjectConstructor jElem inp, compileObjectConstructor jElems inp) of
   (Right x1, Right x2) -> Right [JObject (y ++ o) | (JObject y) <- x1, (JObject o) <- x2]
   (Right _, Left x) -> Left x
   (Left x, _) -> Left x
-  
+
 compileSingleObjectConstructor :: (Filter, Filter) -> JProgram [JSON]
 compileSingleObjectConstructor (JSONVal (JString a), EmptyFilter) inp = case compile (ObjectIdentifierIndex a) inp of
   Right x -> Right [JObject [(a, y)] | y <- x]
   Left _ -> Right [JObject [(a, JNull)]]
 compileSingleObjectConstructor (JSONVal (JString a), f) inp = case compile f inp of
   Right x -> Right [JObject [(a, y)] | y <- x]
-  Left x -> Left x
+  Left _ -> Right [JObject [(a, JNull)]]
 compileSingleObjectConstructor (a, f) inp = case (compile a inp, compile f inp) of
   (Right [JString s], Right x) -> Right [JObject [(s, y)] | y <- x]
   (Right _, Right _) -> Left "unable to use non string key"
