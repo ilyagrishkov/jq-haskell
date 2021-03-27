@@ -76,28 +76,23 @@ compileObjectConstructor [jElem] inp = case compileSingleObjectConstructor jElem
   Left x -> Left x
 compileObjectConstructor (jElem:jElems) inp = case (compileSingleObjectConstructor jElem inp, compileObjectConstructor jElems inp) of
   (Right x, Right [JObject o]) -> Right [JObject (y:o) | y <- x]
-  _ -> Left "Error when compiling object constructor"
+  (Right _, Right _) -> Left "expected JObject return"
+  (Right _, Left x) -> Left x
+  (Left x, _) -> Left x
 
 
 compileSingleObjectConstructor :: (Filter, Filter) -> JProgram [(String, JSON)]
-compileSingleObjectConstructor (JSONVal (JString a), EmptyFilter) inp = Right [(a, y) | y <- value]
-  where 
-    value = case compile (ObjectIdentifierIndex a) inp of
-      Right x -> x
-      Left _ -> [JNull]
-compileSingleObjectConstructor (JSONVal (JString a), f) inp = Right [(a, y) | y <- value]
-  where 
-    value = case compile f inp of
-      Right x -> x
-      Left _ -> [JNull]
-compileSingleObjectConstructor (a, f) inp = Right [(key, y) | y <- value]
-  where
-    key = case compile a inp of
-      Right [JString s] -> s
-      _ -> error "unable to use non string key"
-    value = case compile f inp of
-      Right x -> x
-      Left _ -> [JNull]
+compileSingleObjectConstructor (JSONVal (JString a), EmptyFilter) inp = case compile (ObjectIdentifierIndex a) inp of 
+  Right x -> Right [(a, y) | y <- x]
+  Left x -> Left x
+compileSingleObjectConstructor (JSONVal (JString a), f) inp = case compile f inp of 
+  Right x -> Right [(a, y) | y <- x]
+  Left x -> Left x
+compileSingleObjectConstructor (a, f) inp = case (compile a inp, compile f inp) of
+  (Right [JString s], Right x) -> Right [(s, y) | y <- x]
+  (Right _, Right _) -> Left "unable to use non string key"
+  (Right _, Left x) -> Left x
+  (Left x, _) -> Left x
   
 ----------------------------- 
     
