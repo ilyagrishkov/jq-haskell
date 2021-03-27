@@ -8,7 +8,7 @@ data JSON =
     deriving (Eq)
     
 instance Show JSON where
-  show = prettyPrintColor 0
+  show = prettyPrint 0
 
 formatObject ::  Int -> [(String, JSON)] -> String
 formatObject _ [] = ""

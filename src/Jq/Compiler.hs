@@ -80,7 +80,7 @@ compileObjectConstructor (jElem:jElems) inp = case (compileSingleObjectConstruct
 compileSingleObjectConstructor :: (Filter, Filter) -> JProgram [JSON]
 compileSingleObjectConstructor (JSONVal (JString a), EmptyFilter) inp = case compile (ObjectIdentifierIndex a) inp of
   Right x -> Right [JObject [(a, y)] | y <- x]
-  Left x -> Left x
+  Left _ -> Right [JObject [(a, JNull)]]
 compileSingleObjectConstructor (JSONVal (JString a), f) inp = case compile f inp of
   Right x -> Right [JObject [(a, y)] | y <- x]
   Left x -> Left x
