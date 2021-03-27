@@ -9,10 +9,10 @@ import Jq.Json
 -----------------------------
 
 parseFilter :: Parser Filter
-parseFilter =  parseJsonFilter <|> parseArrayConstructor <|> parseObjectConstructor <|> parseComplexFilter <|> parseSingleFilter
+parseFilter =  parseJsonFilter <|> parseComplexFilter <|> parseSingleFilter
 
 parseSingleFilter :: Parser Filter
-parseSingleFilter = token (parseGroup <|> parseSequentialFilters)
+parseSingleFilter = token (convertToPipe <$> ((:) <$> parsePrimaryFilters <*> many parseSecondaryFilters))
 
 parseComplexFilter :: Parser Filter
 parseComplexFilter = token (parsePipe <|> parseComma)
@@ -23,12 +23,8 @@ parseComplexFilter = token (parsePipe <|> parseComma)
 parseIdentity :: Parser Filter
 parseIdentity = Identity <$ char '.'
 
-parseSequentialFilters :: Parser Filter
-parseSequentialFilters = convertToPipe <$> ((:) <$> parsePrimaryFilters <*> many parseSecondaryFilters)
-
 parsePrimaryFilters :: Parser Filter
-parsePrimaryFilters = parseOptionalSlice <|> parseSlice <|> parseOptionalArrayIndex <|> parseArrayIndex
-  <|> parseOptionalObjectIdentifierIndex <|> parseStandardObjectIdentifierIndex <|> parseIdentity
+parsePrimaryFilters = parseArrayConstructor <|> parseObjectConstructor <|> parseGroup <|> parseOptionalObjectIdentifierIndex <|> parseStandardObjectIdentifierIndex <|> parseIdentity
 
 parseSecondaryFilters :: Parser Filter
 parseSecondaryFilters = parseOptionalSlice <|> parseSlice <|> parseOptionalArrayIndex <|> parseArrayIndex
@@ -88,7 +84,7 @@ parseObjectConstructor = ObjectConstructor <$> (char '{' *> space *> split (spac
     <$> key <*> many (space *> char ':' <* space) <*> many value) <* space <* char '}')
   where
     key = parseSingleFilter <|> (JSONVal . JString <$> (identifier <|> charSeq))
-    value = parseJsonFilter <|> parseArrayConstructor <|> parseObjectConstructor <|> parseSingleFilter
+    value = parseFilter
 
 -----------------------------
 

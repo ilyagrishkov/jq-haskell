@@ -71,26 +71,21 @@ compileArrayConstructor f inp = case compile f inp of
 
 compileObjectConstructor :: [(Filter, Filter)] -> JProgram [JSON]
 compileObjectConstructor [] _ = error "Expected non-empty object constrcutor" -- should never occur
-compileObjectConstructor [jElem] inp = case compileSingleObjectConstructor jElem inp of
-  Right x -> Right [JObject [y] | y <- x]
-  Left x -> Left x
+compileObjectConstructor [jElem] inp = compileSingleObjectConstructor jElem inp 
 compileObjectConstructor (jElem:jElems) inp = case (compileSingleObjectConstructor jElem inp, compileObjectConstructor jElems inp) of
-  (Right x, Right [JObject o]) -> Right [JObject (y:o) | y <- x]
+  (Right x1, Right x2) -> Right [JObject (y ++ o) | (JObject y) <- x1, (JObject o) <- x2]
   (Right _, Left x) -> Left x
   (Left x, _) -> Left x
-  (_, Right _) -> error "expected JObject here" -- should never occur
   
-
-
-compileSingleObjectConstructor :: (Filter, Filter) -> JProgram [(String, JSON)]
+compileSingleObjectConstructor :: (Filter, Filter) -> JProgram [JSON]
 compileSingleObjectConstructor (JSONVal (JString a), EmptyFilter) inp = case compile (ObjectIdentifierIndex a) inp of
-  Right x -> Right [(a, y) | y <- x]
+  Right x -> Right [JObject [(a, y)] | y <- x]
   Left x -> Left x
 compileSingleObjectConstructor (JSONVal (JString a), f) inp = case compile f inp of
-  Right x -> Right [(a, y) | y <- x]
+  Right x -> Right [JObject [(a, y)] | y <- x]
   Left x -> Left x
 compileSingleObjectConstructor (a, f) inp = case (compile a inp, compile f inp) of
-  (Right [JString s], Right x) -> Right [(s, y) | y <- x]
+  (Right [JString s], Right x) -> Right [JObject [(s, y)] | y <- x]
   (Right _, Right _) -> Left "unable to use non string key"
   (Right _, Left x) -> Left x
   (Left x, _) -> Left x
