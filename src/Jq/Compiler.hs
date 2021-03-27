@@ -50,7 +50,7 @@ compileSlice _ _ _ JNull = Right [JNull]
 compileSlice _ _ opt _ = if opt then Right [] else Left "cannot slice over non array element"
 
 compileComma :: Filter -> Filter -> JProgram [JSON]
-compileComma f1 f2 inp = (++) <$> compile f1 inp <*> compile f2 inp
+compileComma f1 f2 inp = (++) <$> (compile f1 inp <> Right [JNull]) <*> (compile f2 inp <> Right [JNull])
 
 compilePipe :: Filter -> Filter -> JProgram [JSON]
 compilePipe f1 f2 inp = compile f1 inp >>= foldr (\x -> (<*>) ((++) <$> compile f2 x)) (Right [])
