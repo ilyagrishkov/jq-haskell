@@ -84,7 +84,7 @@ parseObjectConstructor = ObjectConstructor <$> (char '{' *> space *> split (spac
     <$> key <*> many (space *> char ':' <* space) <*> many value) <* space <* char '}')
   where
     key = parseSingleFilter <|> (JSONVal . JString <$> (identifier <|> charSeq))
-    value = parseFilter
+    value = parseJsonFilter <|> parseSingleFilter
 
 -----------------------------
 
