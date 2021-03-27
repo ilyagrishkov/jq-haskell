@@ -24,11 +24,6 @@ compile EmptyFilter = error "Empty filter should not appear"
 ----------------------------- 
 --- Filter compilers
 
-compileValueIterator :: Bool -> JProgram [JSON]
-compileValueIterator _ (JObject b) = Right (map snd b)
-compileValueIterator _ (JArray a) = Right a
-compileValueIterator opt _ = if opt then Right [] else Left "Cannot iterate"
-
 compileObjectIdentifierIndex :: String -> Bool -> JProgram [JSON]
 compileObjectIdentifierIndex i opt (JObject o) =
   case map snd (filter (\(a, _) -> a == i) o) of
