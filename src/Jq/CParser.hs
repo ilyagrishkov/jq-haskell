@@ -79,12 +79,10 @@ parseArrayConstructor :: Parser Filter
 parseArrayConstructor = ArrayConstructor <$> (char '[' *> parseFilter <* char ']')
 
 parseObjectConstructor :: Parser Filter
-parseObjectConstructor = ObjectConstructor <$> (char '{' *> space *> split (space *> char ',' <* space)
-  ((\k _ v -> if not (null v) then (k, head v) else (k, EmptyFilter))
-    <$> key <*> many (space *> char ':' <* space) <*> many value) <* space <* char '}')
+parseObjectConstructor = ObjectConstructor <$> (char '{' *> space *> split (space *> char ',' <* space) (keyVal <|> key) <* space <* char '}')
   where
-    key = parseSingleFilter <|> (JSONVal . JString <$> (identifier <|> charSeq))
-    value = parseJsonFilter <|> parseSingleFilter
+    key = (\s -> (JSONVal (JString s), ObjectIdentifierIndex s)) <$> (identifier <|> charSeq)
+    keyVal = (\k _ v -> (k, v)) <$> (parseGroup <|> (JSONVal . JString <$> (identifier <|> charSeq))) <*> (space *> char ':' <* space) <*> (parseJsonFilter <|> parseSingleFilter)
 
 -----------------------------
 

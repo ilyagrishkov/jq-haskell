@@ -19,7 +19,6 @@ compile (Pipe f) = uncurry compilePipe f
 compile (JSONVal v) = \_ -> Right [v]
 compile (ArrayConstructor a) = compileArrayConstructor a
 compile (ObjectConstructor o) = compileObjectConstructor o
-compile EmptyFilter = error "Empty filter should not appear"
 
 ----------------------------- 
 --- Filter compilers
@@ -73,17 +72,14 @@ compileObjectConstructor (jElem:jElems) inp = case (compileSingleObjectConstruct
   (Left x, _) -> Left x
 
 compileSingleObjectConstructor :: (Filter, Filter) -> JProgram [JSON]
-compileSingleObjectConstructor (JSONVal (JString a), EmptyFilter) inp = case compile (ObjectIdentifierIndex a) inp of
-  Right x -> Right [JObject [(a, y)] | y <- x]
-  Left _ -> Right [JObject [(a, JNull)]]
-compileSingleObjectConstructor (JSONVal (JString a), f) inp = case compile f inp of
-  Right x -> Right [JObject [(a, y)] | y <- x]
-  Left _ -> Right [JObject [(a, JNull)]]
 compileSingleObjectConstructor (a, f) inp = case (compile a inp, compile f inp) of
-  (Right [JString s], Right x) -> Right [JObject [(s, y)] | y <- x]
-  (Right _, Right _) -> Left "unable to use non string key"
-  (Right _, Left x) -> Left x
+  (Right x, Right y) -> if all isJString x then Right [JObject [(s, z)] | z <- y, (JString s) <- x] else Left "unable to use non string key"
+  (Right x, Left _) -> if all isJString x then Right [JObject [(s, JNull)] | (JString s) <- x] else Left "unable to use non string key"
   (Left x, _) -> Left x
+  
+isJString :: JSON -> Bool
+isJString (JString _) = True
+isJString _ = False
   
 ----------------------------- 
     
