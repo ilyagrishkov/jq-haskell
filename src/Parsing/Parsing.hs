@@ -6,6 +6,7 @@ module Parsing.Parsing (module Parsing.Parsing, module Control.Applicative) wher
 
 import Control.Applicative
 import Data.Char
+import Numeric 
 
 -- Basic definitions
 
@@ -146,7 +147,7 @@ readUntil f = token str
       return (x : xs)
   
 escapeUnicode :: Parser Char
-escapeUnicode = fst . head . readLitChar <$> readNChars isHexDigit 4
+escapeUnicode = chr . fst . head . readHex <$> readNChars isHexDigit 4
 
 escape :: Parser Char
 escape =

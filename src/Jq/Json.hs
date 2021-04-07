@@ -24,9 +24,21 @@ prettyPrint :: Int -> JSON -> String
 prettyPrint _ JNull = "null"
 prettyPrint _ (JNum v) = if v == fromInteger (round v) then show (round v :: Integer) else show v
 prettyPrint _ (JBool b) = if b then "true" else "false"
-prettyPrint _ (JString s) = show s
+prettyPrint _ (JString s) = "\"" ++ escapeString s ++ "\""
 prettyPrint n (JArray x) = if not (null x) then "[\n" ++ formatArray (n + indent) x ++ "\n" ++ replicate n ' ' ++ "]" else "[]"
 prettyPrint n (JObject x) = if not (null x) then "{\n" ++ formatObject (n + indent) x ++ "\n" ++ replicate n ' ' ++ "}" else "{}"
+
+escapeString :: String -> String
+escapeString [] = ""
+escapeString ('\n':xs) = "\\n" ++ escapeString xs 
+escapeString ('\t':xs) = "\\t" ++ escapeString xs 
+escapeString ('\\':xs) = "\\\\" ++ escapeString xs 
+escapeString ('"':xs) = "\\\"" ++ escapeString xs 
+escapeString ('\b':xs) = "\\b" ++ escapeString xs 
+escapeString ('\f':xs) = "\\f" ++ escapeString xs 
+escapeString ('\r':xs) = "\\r" ++ escapeString xs 
+escapeString ('/':xs) = "\\/" ++ escapeString xs 
+escapeString (x:xs) = x : escapeString xs
 
 -----------------------------
 --- Color printing
