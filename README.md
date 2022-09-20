@@ -1,8 +1,6 @@
-# Project for FP course at TU Delft
+# `jq` implementation in Haskell
 
-A clone of `jq` in Haskell.
-
-Read `ASSIGNMENT.md` for task description and detailed instructions
+A clone of `jq` done as part of the Functional Programming course of TUDelft.
 
 ## Build
 ```
@@ -28,11 +26,3 @@ or
 ```
 > echo '{"this" : "that"}' | stack run -- '.this'
 ```
-
-## Test `jq` online
-
-[jqplay.org](https://jqplay.org/)
-
-## Docs
-
-[stedolan.github.io/jq/manual](https://stedolan.github.io/jq/manual)
