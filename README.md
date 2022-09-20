@@ -1,6 +1,6 @@
 # `jq` implementation in Haskell
 
-A clone of `jq` done as part of the Functional Programming course of TUDelft.
+A clone of `jq` done as part of the Functional Programming course at TUDelft.
 
 ## Build
 ```
